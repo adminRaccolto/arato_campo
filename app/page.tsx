@@ -1,69 +1,88 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { LogoutButton } from "./logout-button";
 
-export default function Home() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const email = (data?.claims?.email as string | undefined) ?? "";
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 20px",
+          borderBottom: "0.5px solid var(--azul-petroleo)",
+          background: "#fff",
+        }}
+      >
+        <div>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
+            Campo
           </p>
+          <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>{email}</p>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <LogoutButton />
+      </header>
+
+      <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--azul-petroleo)" }}>
+            MONITORAMENTO
+          </p>
+          <Link
+            href="/monitoramento/nova"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "16px",
+              borderRadius: 12,
+              border: "0.5px solid var(--azul-petroleo)",
+              background: "#fff",
+            }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <span style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
+              Novo monitoramento de campo
+            </span>
+            <span style={{ color: "var(--mostarda)", fontSize: 18 }}>›</span>
+          </Link>
         </div>
-      </main>
-    </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--azul-petroleo)" }}>
+            RECOMENDAÇÕES AGRONÔMICAS
+          </p>
+          {[
+            { href: "/recomendacoes/plantio/nova", label: "Nova recomendação de plantio" },
+            { href: "/recomendacoes/pulverizacao/nova", label: "Nova recomendação de pulverização" },
+            { href: "/recomendacoes/adubacao/nova", label: "Nova recomendação de adubação" },
+            { href: "/recomendacoes/corretivo/nova", label: "Nova recomendação de corretivo" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px",
+                borderRadius: 12,
+                border: "0.5px solid var(--azul-petroleo)",
+                background: "#fff",
+              }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
+                {item.label}
+              </span>
+              <span style={{ color: "var(--mostarda)", fontSize: 18 }}>›</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }

@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase CLI local state (project ref cache, no secrets, but not repo content)
+/supabase/.temp
+
+# scratch files used for one-off previews, not part of the app
+/scratchpad
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
