@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 export type Fazenda = { id: string; nome: string };
 export type AnoSafra = { id: string; descricao: string; data_inicio: string; data_fim: string };
@@ -27,9 +28,7 @@ export function escolherAtivoPorData<T extends { data_inicio: string; data_fim: 
 export function useCatalogoFazenda(categoriasInsumo: string[]) {
   const supabase = useMemo(() => createClient(), []);
   const categoriasKey = categoriasInsumo.join(",");
-
-  const [perfilId, setPerfilId] = useState<string | null>(null);
-  const [contaId, setContaId] = useState<string | null>(null);
+  const auth = useAuth();
 
   const [fazendas, setFazendas] = useState<Fazenda[]>([]);
   const [fazendaId, setFazendaId] = useState("");
@@ -44,61 +43,45 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
 
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
+  const [carregandoFazendas, setCarregandoFazendas] = useState(true);
+  const [erroFazendas, setErroFazendas] = useState<string | null>(null);
 
+  // Perfil/conta já vêm prontos do AuthProvider (carregado uma vez só, no
+  // topo da árvore) — aqui só carrega as fazendas da conta e escolhe a
+  // fazenda inicial (a salva no perfil, se houver).
   useEffect(() => {
-    async function carregar() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+    if (auth.carregando) return;
+    if (auth.erro) {
+      setErroFazendas(auth.erro);
+      setCarregandoFazendas(false);
+      return;
+    }
+    if (!auth.contaId) return;
 
-      const { data: perfil, error: perfilError } = await supabase
-        .from("perfis")
-        .select("id, conta_id, fazenda_id")
-        .eq("user_id", user.id)
-        .limit(1);
-
-      if (perfilError || !perfil || perfil.length === 0) {
-        setErro("Não foi possível carregar o perfil do usuário logado.");
-        setCarregando(false);
-        return;
-      }
-
-      const meuPerfil = perfil[0];
-      if (!meuPerfil.conta_id) {
-        setErro("Perfil sem conta vinculada.");
-        setCarregando(false);
-        return;
-      }
-
-      setPerfilId(meuPerfil.id);
-      setContaId(meuPerfil.conta_id);
-
+    async function carregarFazendas(contaIdParam: string, fazendaIdPadrao: string | null) {
       const { data: fazendasData, error: fazendasError } = await supabase
         .from("fazendas")
         .select("id, nome")
-        .eq("conta_id", meuPerfil.conta_id)
+        .eq("conta_id", contaIdParam)
         .order("nome");
 
       if (fazendasError) {
-        setErro("Não foi possível carregar as fazendas da conta.");
-        setCarregando(false);
+        setErroFazendas("Não foi possível carregar as fazendas da conta.");
+        setCarregandoFazendas(false);
         return;
       }
 
       setFazendas(fazendasData ?? []);
-      setFazendaId(meuPerfil.fazenda_id ?? fazendasData?.[0]?.id ?? "");
-      setCarregando(false);
+      setFazendaId(fazendaIdPadrao ?? fazendasData?.[0]?.id ?? "");
+      setCarregandoFazendas(false);
     }
 
-    carregar();
+    carregarFazendas(auth.contaId, auth.fazendaIdPadrao);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth.carregando, auth.erro, auth.contaId, auth.fazendaIdPadrao]);
 
   useEffect(() => {
-    const contaIdAtual = contaId;
+    const contaIdAtual = auth.contaId;
     if (!fazendaId || !contaIdAtual) return;
 
     async function carregarCatalogoFazenda(contaIdParam: string) {
@@ -134,7 +117,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
 
     carregarCatalogoFazenda(contaIdAtual);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fazendaId, contaId, categoriasKey]);
+  }, [fazendaId, auth.contaId, categoriasKey]);
 
   useEffect(() => {
     if (!fazendaId || !anoSafraId) {
@@ -163,7 +146,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
 
   return {
     supabase,
-    perfilId,
+    perfilId: auth.perfilId,
     fazendas,
     fazendaId,
     setFazendaId,
@@ -176,8 +159,8 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
     talhoes,
     insumos,
     perfis,
-    carregando,
-    erro,
-    setErro,
+    carregando: auth.carregando || carregandoFazendas,
+    erro: auth.erro ?? erroFazendas,
+    setErro: setErroFazendas,
   };
 }
