@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/client";
+import { notificarPendente } from "@/lib/notificacoes/notificar-pendente";
 
 type SupabaseCliente = ReturnType<typeof createClient>;
 type ResultadoExecucao = { ok: boolean; erro?: string };
@@ -101,6 +102,7 @@ export async function executarFechamentoPulverizacao(
   const erroItens = resultadosItens.find((r) => r.error)?.error;
   if (erroItens) return { ok: false, erro: erroItens.message };
 
+  await notificarPendente(supabase, "pulverizacoes", payload.linhas[0].execucaoId);
   return finalizarTarefa(supabase, "recomendacoes_pulverizacao", payload);
 }
 
@@ -152,6 +154,7 @@ export async function executarFechamentoAdubacao(
   const erroItens = resultadosItens.find((r) => r.error)?.error;
   if (erroItens) return { ok: false, erro: erroItens.message };
 
+  await notificarPendente(supabase, "adubacoes_base", payload.linhas[0].execucaoId);
   return finalizarTarefa(supabase, "recomendacoes_adubacao", payload);
 }
 
@@ -203,6 +206,7 @@ export async function executarFechamentoCorretivo(
   const erroItens = resultadosItens.find((r) => r.error)?.error;
   if (erroItens) return { ok: false, erro: erroItens.message };
 
+  await notificarPendente(supabase, "correcoes_solo", payload.linhas[0].execucaoId);
   return finalizarTarefa(supabase, "recomendacoes_corretivo", payload);
 }
 
@@ -244,6 +248,7 @@ export async function executarFechamentoPlantio(
   const { error: erroPlantio } = await supabase.from("plantios").upsert(linhasPlantio as never);
   if (erroPlantio) return { ok: false, erro: erroPlantio.message };
 
+  await notificarPendente(supabase, "plantios", linhasPlantio[0].id);
   return finalizarTarefa(supabase, "recomendacoes_plantio", payload);
 }
 

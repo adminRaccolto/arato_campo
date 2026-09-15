@@ -438,9 +438,20 @@ Pendências de engenharia de verdade que restam:
   etc. e precisa do filtro `status_campo = 'aprovado'` (DRE, Custos, Kardex, relatório de aplicações
   — pelo menos esses 4 já são sabidamente afetados) — isso é novo mesmo, o `app/campo` existente
   não tem fluxo de aprovação, grava direto
-- Mecanismo de notificação cross-app (App Campo ↔ Arato principal) pra pendência/aprovação (ver
-  4.3) — só a necessidade está confirmada, o "como" (polling, tabela de notificações, e-mail,
-  badge no TopNav do Arato) ainda não foi decidido
+- ~~Mecanismo de notificação cross-app~~ → **resolvido (15/set/2026): WhatsApp automático**, via a
+  Evolution API que já existe no Arato principal pro bot de IA (`lib/whatsapp-evolution.ts`,
+  `enviarTexto`). Reaproveita a coluna `perfis.whatsapp` que já existia (criada pro bot, seção
+  "WhatsApp IA" de `supabase_migrations.sql`) — sem migration nova. Dois gatilhos, os dois vivendo
+  no repo do Arato principal (só lá tem a chave da Evolution API, nunca aqui — CLAUDE.md 3.2):
+  - **Lançamento novo `pendente`:** o App Campo chama `app/api/campo/notificar-pendente` (agrofield)
+    logo depois de gravar cada fechamento/abastecimento (`lib/notificacoes/notificar-pendente.ts`,
+    chamado no fim de cada `executarFechamento*`/`executarAbastecimento`) — avisa todo Gerente
+    Campo com acesso à fazenda e telefone cadastrado.
+  - **Aprovação/rejeição:** `app/api/campo/aprovar-lancamento` (agrofield) avisa quem lançou
+    (`lancado_por_perfil_id`), depois de já ter persistido a decisão.
+  Os dois são best-effort — nunca bloqueiam nem falham o fluxo principal (lançamento ou decisão) se
+  o envio falhar ou ninguém tiver telefone. Cadastro do número é feito pelo admin Raccolto em
+  `/admin/campo` (mesma tela do item 5 abaixo), nunca self-service — mesmo padrão do PIN.
 - **Achado novo (14/set/2026), fora do escopo do App Campo mas registrado aqui por ter sido
   descoberto durante este trabalho:** o banco real não tem isolamento de tenant por RLS em boa
   parte das tabelas do Arato principal — `fazendas`/`talhoes`/`insumos`/`perfis`/
@@ -453,6 +464,14 @@ Pendências de engenharia de verdade que restam:
   Campo (`recomendacoes_*`, `tarefas`, `tarefas_transferencias`) não seguem esse padrão frágil —
   ganharam RLS de verdade, escopada por fazenda, via `db/migrations-draft/008_rls_recomendacoes_tarefas.sql`
   (função `fn_pode_acessar_fazenda_campo`).
+- **Atualização (15/set/2026):** conferido de novo — uma sessão paralela (agrofield) já está
+  corrigindo isso. `contas`/`fazendas`/`produtores`/`perfis` já têm política real, escopada por
+  conta. `talhoes` também já tem a política real, mas **ainda convive** com uma policy de
+  emergência (`emergencial_autenticado`, `using (true)`) que, coexistindo, anula a real (RLS é OR
+  entre policies — basta uma passar). `plantios`/`pulverizacoes`/`colheitas`/`ciclos`/`insumos`
+  ainda só têm essa policy de emergência, nenhuma política real ainda. Decisão do dono: não mexer
+  agora, deixar a sessão paralela terminar, pra não colidir (política sobrescrita, commit
+  conflitante) — conferir de novo depois.
 
 ---
 

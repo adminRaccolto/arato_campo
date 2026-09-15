@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/client";
+import { notificarPendente } from "@/lib/notificacoes/notificar-pendente";
 
 type SupabaseCliente = ReturnType<typeof createClient>;
 
@@ -48,5 +49,7 @@ export async function executarAbastecimento(
   });
 
   if (error) return { ok: false, erro: error.message };
+
+  await notificarPendente(supabase, "abastecimentos", payload.id);
   return { ok: true };
 }
