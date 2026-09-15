@@ -23,6 +23,7 @@ export default function NovoAbastecimentoPage() {
     cicloId,
     setCicloId,
     maquinas,
+    perfis,
     carregando,
     erro: erroCarregamento,
   } = useCatalogoFazenda([]);
@@ -37,6 +38,10 @@ export default function NovoAbastecimentoPage() {
   // bomba selecionada; o valor efetivo é derivado logo abaixo, sem efeito
   // (evita duplicar estado — a bomba já é a fonte de verdade quando existe).
   const [insumoManualId, setInsumoManualId] = useState("");
+  // Vazio = "não trocou" — o valor efetivo cai no próprio usuário logado
+  // (ver `abastecidoPorPerfilId` abaixo). Evita precisar de um efeito só
+  // pra copiar `perfilId` num estado assim que ele carrega.
+  const [abastecidoPorEscolhido, setAbastecidoPorEscolhido] = useState("");
   const [quantidadeL, setQuantidadeL] = useState("");
   const [horimetro, setHorimetro] = useState("");
   const [km, setKm] = useState("");
@@ -66,6 +71,7 @@ export default function NovoAbastecimentoPage() {
 
   const bombaSelecionada = bombas.find((b) => b.id === bombaId) ?? null;
   const insumoId = bombaSelecionada?.insumo_id ?? insumoManualId;
+  const abastecidoPorPerfilId = abastecidoPorEscolhido || perfilId || "";
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -104,6 +110,7 @@ export default function NovoAbastecimentoPage() {
       data,
       observacao: observacao || null,
       perfilId,
+      abastecidoPorPerfilId: abastecidoPorPerfilId || null,
     };
 
     const resultado = await enfileirarEExecutar(
@@ -136,10 +143,11 @@ export default function NovoAbastecimentoPage() {
     const fazendaNome = fazendas.find((f) => f.id === fazendaId)?.nome ?? "";
     const maquinaNome = maquinas.find((m) => m.id === maquinaId)?.nome ?? "";
     const combustivelNome = combustiveis.find((c) => c.id === insumoId)?.nome ?? "Combustível";
+    const abastecedorNome = perfis.find((p) => p.id === abastecidoPorPerfilId)?.nome ?? "";
     const mensagem = [
       `⛽ *Abastecimento* — ${fazendaNome}`,
       `${maquinaNome}: ${quantidadeL} L de ${combustivelNome}`,
-      `Data: ${new Date(data + "T12:00").toLocaleDateString("pt-BR")}`,
+      `Data: ${new Date(data + "T12:00").toLocaleDateString("pt-BR")}${abastecedorNome ? ` · Abastecido por ${abastecedorNome}` : ""}`,
     ].join("\n");
     return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} mensagemWhatsApp={mensagem} />;
   }
@@ -212,6 +220,18 @@ export default function NovoAbastecimentoPage() {
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Quantidade (litros)</span>
             <input type="number" inputMode="decimal" step="0.01" style={inputStyle} value={quantidadeL} onChange={(e) => setQuantidadeL(e.target.value)} />
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelStyle}>Quem abasteceu</span>
+            <select style={inputStyle} value={abastecidoPorPerfilId} onChange={(e) => setAbastecidoPorEscolhido(e.target.value)}>
+              {perfis.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome ?? p.id}
+                  {p.id === perfilId ? " (você)" : ""}
+                </option>
+              ))}
+            </select>
           </label>
         </section>
 

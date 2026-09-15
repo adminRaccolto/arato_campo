@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       abastecimentos: {
         Row: {
+          abastecido_por_perfil_id: string | null
           aprovado_em: string | null
           aprovado_por_perfil_id: string | null
           bomba_id: string | null
@@ -47,6 +48,7 @@ export type Database = {
           valor_unitario: number
         }
         Insert: {
+          abastecido_por_perfil_id?: string | null
           aprovado_em?: string | null
           aprovado_por_perfil_id?: string | null
           bomba_id?: string | null
@@ -78,6 +80,7 @@ export type Database = {
           valor_unitario?: number
         }
         Update: {
+          abastecido_por_perfil_id?: string | null
           aprovado_em?: string | null
           aprovado_por_perfil_id?: string | null
           bomba_id?: string | null
@@ -109,6 +112,13 @@ export type Database = {
           valor_unitario?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "abastecimentos_abastecido_por_perfil_id_fkey"
+            columns: ["abastecido_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "abastecimentos_aprovado_por_perfil_id_fkey"
             columns: ["aprovado_por_perfil_id"]

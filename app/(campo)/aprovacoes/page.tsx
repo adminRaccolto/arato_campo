@@ -19,6 +19,7 @@ type ItemPendente = {
   data: string | null;
   detalhe: string;
   lancadoPorPerfilId: string | null;
+  abastecidoPorPerfilId?: string | null;
   maquinaId: string | null;
   produtos: ProdutoComparado[];
 };
@@ -100,7 +101,7 @@ export default function AprovacoesPage() {
           .eq("status_campo", "pendente"),
         supabase
           .from("abastecimentos")
-          .select("id, fazenda_id, data, quantidade_l, insumo_id, lancado_por_perfil_id, maquina_id")
+          .select("id, fazenda_id, data, quantidade_l, insumo_id, lancado_por_perfil_id, abastecido_por_perfil_id, maquina_id")
           .in("fazenda_id", fazendaIds)
           .eq("status_campo", "pendente"),
       ]);
@@ -241,6 +242,7 @@ export default function AprovacoesPage() {
           quantidade_l: number;
           insumo_id: string | null;
           lancado_por_perfil_id: string | null;
+          abastecido_por_perfil_id: string | null;
           maquina_id: string | null;
         }[]).map((x) => ({
           id: x.id,
@@ -252,6 +254,7 @@ export default function AprovacoesPage() {
           data: x.data,
           detalhe: x.insumo_id ? (nomeCombustivelPorId.get(x.insumo_id) ?? "Combustível") : "Combustível",
           lancadoPorPerfilId: x.lancado_por_perfil_id,
+          abastecidoPorPerfilId: x.abastecido_por_perfil_id,
           maquinaId: x.maquina_id,
           produtos: [
             {
@@ -266,7 +269,13 @@ export default function AprovacoesPage() {
 
       setItens(todos);
 
-      const perfilIds = Array.from(new Set(todos.map((i) => i.lancadoPorPerfilId).filter((id): id is string => Boolean(id))));
+      const perfilIds = Array.from(
+        new Set(
+          todos
+            .flatMap((i) => [i.lancadoPorPerfilId, i.abastecidoPorPerfilId])
+            .filter((id): id is string => Boolean(id))
+        )
+      );
       if (perfilIds.length > 0) {
         const { data: perfisData } = await supabase.from("perfis").select("id, nome").in("id", perfilIds);
         setPerfilNomePorId(new Map((perfisData ?? []).map((p) => [p.id, p.nome ?? p.id])));
@@ -390,6 +399,9 @@ export default function AprovacoesPage() {
                   <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
                     {item.data ? new Date(item.data + "T12:00").toLocaleDateString("pt-BR") : ""}
                     {item.lancadoPorPerfilId ? ` · lançado por ${perfilNomePorId.get(item.lancadoPorPerfilId) ?? "—"}` : ""}
+                    {item.abastecidoPorPerfilId && item.abastecidoPorPerfilId !== item.lancadoPorPerfilId
+                      ? ` · abastecido por ${perfilNomePorId.get(item.abastecidoPorPerfilId) ?? "—"}`
+                      : ""}
                     {item.maquinaId ? ` · ${maquinaNomePorId.get(item.maquinaId) ?? "máquina"}` : ""}
                   </p>
                 </div>

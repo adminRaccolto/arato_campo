@@ -15,6 +15,10 @@ export type PayloadAbastecimento = {
   data: string;
   observacao: string | null;
   perfilId: string | null;
+  // quem fisicamente abasteceu — pode ser diferente de quem está logado
+  // registrando o lançamento (perfilId/lancado_por_perfil_id). Default é o
+  // próprio usuário logado, mas a tela deixa trocar (pedido 15/set/2026).
+  abastecidoPorPerfilId: string | null;
 };
 
 // Só grava o lançamento com status_campo='pendente' (CLAUDE.md 4.3) — a
@@ -40,6 +44,7 @@ export async function executarAbastecimento(
     status_campo: "pendente",
     origem_lancamento: "app_campo",
     lancado_por_perfil_id: payload.perfilId,
+    abastecido_por_perfil_id: payload.abastecidoPorPerfilId,
   });
 
   if (error) return { ok: false, erro: error.message };
