@@ -488,6 +488,23 @@ breakpoint de 560px da seção anterior). Mostra o logo do cliente (`contas.logo
 schema — mesma coluna usada pelo Arato principal) no topo, com o ícone padrão do App Campo como
 fallback quando a conta não tem logo configurado.
 
+**Seletor de fazenda visível (15/set/2026):** a seção 2.3 original dizia "sem farm-switcher fixo,
+cada tela tem seu próprio seletor" — o dono achou isso confuso na prática (não dava pra saber em
+qual fazenda você estava só olhando a tela). Adicionado um seletor de fazenda na barra lateral
+(`lib/fazenda-ativa/FazendaAtivaProvider.tsx`, só aparece se a conta tiver mais de uma fazenda),
+persistido em localStorage. Não substitui o seletor de cada tela (continua existindo, CLAUDE.md
+2.3) — só pré-popula esse seletor com a fazenda ativa em vez de sempre cair no primeiro item.
+
+**Estética — correção de rumo (15/set/2026):** uma primeira tentativa de deixar a Início "mais
+bonita" (ícones em emoji dentro de badge colorido arredondado, sombra em todo card) foi rejeitada
+pelo dono como "amador, infantil". A convenção que já valia pro resto do app (seção 2.6: borda
+0.5px sólida, sem sombra, `border-radius` 8/12px) está certa — o desvio foi só nessa tentativa de
+home, já corrigido. Manter qualquer tela nova dentro do padrão sóbrio já estabelecido, não
+inventar um visual "app de consumo" novo. A tela Início também deixou de duplicar os mesmos atalhos
+já presentes na barra lateral — mostra em vez disso o mapa dos talhões da fazenda ativa (contorno
+KML, `app/(campo)/_shared/FazendaMapaKml.tsx`) e contadores (tarefas pendentes, aprovações
+pendentes pra quem é Gerente Campo).
+
 ---
 
 ## 8. HISTÓRICO

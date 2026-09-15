@@ -1,10 +1,13 @@
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { FazendaAtivaProvider } from "@/lib/fazenda-ativa/FazendaAtivaProvider";
 import { CampoShell } from "./CampoShell";
 
 export default function CampoLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <CampoShell>{children}</CampoShell>
+      <FazendaAtivaProvider>
+        <CampoShell>{children}</CampoShell>
+      </FazendaAtivaProvider>
     </AuthProvider>
   );
 }

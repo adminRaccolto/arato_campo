@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SyncButton } from "@/components/SyncButton";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useFazendaAtiva } from "@/lib/fazenda-ativa/FazendaAtivaProvider";
 
 const NAV_ITEMS = [
   { href: "/", label: "Início", icone: "🏠" },
@@ -29,6 +30,7 @@ const PAPEL_LABEL: Record<string, string> = {
 export function CampoShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const auth = useAuth();
+  const fazendaAtiva = useFazendaAtiva();
   const [menuAberto, setMenuAberto] = useState(false);
 
   if (auth.carregando) {
@@ -124,7 +126,33 @@ export function CampoShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, padding: "8px 10px" }}>
+        {fazendaAtiva.fazendas.length > 1 && (
+          <div style={{ padding: "0 18px 14px" }}>
+            <select
+              value={fazendaAtiva.fazendaId}
+              onChange={(e) => fazendaAtiva.setFazendaId(e.target.value)}
+              style={{
+                width: "100%",
+                height: 36,
+                padding: "0 10px",
+                borderRadius: 8,
+                border: "0.5px solid rgba(255,255,255,0.25)",
+                background: "rgba(255,255,255,0.06)",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {fazendaAtiva.fazendas.map((f) => (
+                <option key={f.id} value={f.id} style={{ color: "#000" }}>
+                  {f.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, padding: "4px 10px" }}>
           {itensNav.map((item) => {
             const ativo = item.href === "/" ? path === "/" : path.startsWith(item.href.split("/nova")[0]);
             return (
@@ -136,15 +164,16 @@ export function CampoShell({ children }: { children: React.ReactNode }) {
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
-                  padding: "11px 12px",
-                  borderRadius: 8,
+                  padding: "10px 12px",
+                  borderRadius: 6,
                   fontSize: 13,
-                  fontWeight: ativo ? 700 : 400,
-                  color: ativo ? "#fff" : "rgba(255,255,255,0.72)",
-                  background: ativo ? "var(--azul-petroleo)" : "transparent",
+                  fontWeight: ativo ? 600 : 400,
+                  color: ativo ? "#fff" : "rgba(255,255,255,0.68)",
+                  background: ativo ? "rgba(255,255,255,0.08)" : "transparent",
+                  borderLeft: ativo ? "3px solid var(--mostarda)" : "3px solid transparent",
                 }}
               >
-                <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icone}</span>
+                <span style={{ fontSize: 15, width: 18, textAlign: "center", opacity: 0.9 }}>{item.icone}</span>
                 {item.label}
               </Link>
             );
