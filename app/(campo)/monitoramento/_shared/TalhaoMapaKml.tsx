@@ -128,9 +128,13 @@ export function TalhaoMapaKml({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* position+zIndex explícitos isolam o contexto de empilhamento do
+          mapa — sem isso, os controles internos do Leaflet (z-index 1000
+          no CSS deles) vazam pra fora e sobrepõem a barra lateral
+          (CampoShell, z-index 50). */}
       <div
         ref={containerRef}
-        style={{ width: "100%", height: 220, borderRadius: 10, overflow: "hidden", background: "#EEF3F8" }}
+        style={{ position: "relative", zIndex: 0, width: "100%", height: 220, borderRadius: 10, overflow: "hidden", background: "#EEF3F8" }}
       />
       {!kmlUrl && (
         <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>

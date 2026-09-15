@@ -73,7 +73,15 @@ export function FazendaMapaKml({ talhoes }: { talhoes: TalhaoMapa[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div ref={containerRef} style={{ width: "100%", height: 260, borderRadius: 12, overflow: "hidden", background: "#EEF3F8" }} />
+      {/* position+zIndex explícitos criam um contexto de empilhamento novo
+          pro mapa — sem isso, os controles internos do Leaflet (zoom
+          +/-, z-index 1000 no CSS deles) vazam pra fora do container e
+          sobrepõem elementos com z-index maior fora do mapa, tipo a
+          barra lateral (CampoShell, z-index 50). */}
+      <div
+        ref={containerRef}
+        style={{ position: "relative", zIndex: 0, width: "100%", height: 260, borderRadius: 12, overflow: "hidden", background: "#EEF3F8" }}
+      />
       {semKml && (
         <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
           Nenhum talhão desta fazenda tem contorno KML cadastrado.
