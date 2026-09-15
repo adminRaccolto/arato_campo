@@ -1,4 +1,14 @@
-export function SucessoCriacao({ pendenteSync, onVoltar }: { pendenteSync: boolean; onVoltar: () => void }) {
+import { CompartilharWhatsApp } from "@/components/CompartilharWhatsApp";
+
+export function SucessoCriacao({
+  pendenteSync,
+  onVoltar,
+  mensagemWhatsApp,
+}: {
+  pendenteSync: boolean;
+  onVoltar: () => void;
+  mensagemWhatsApp?: string;
+}) {
   return (
     <main
       style={{
@@ -35,6 +45,8 @@ export function SucessoCriacao({ pendenteSync, onVoltar }: { pendenteSync: boole
           📡 Salva no aparelho — vai sincronizar assim que a conexão voltar.
         </p>
       )}
+      {mensagemWhatsApp && <CompartilharWhatsApp mensagem={mensagemWhatsApp} />}
+
       <button
         onClick={onVoltar}
         style={{

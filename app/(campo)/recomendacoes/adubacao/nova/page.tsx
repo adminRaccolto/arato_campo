@@ -10,6 +10,7 @@ import { criarRecomendacao, CONFIG_ADUBACAO, type PayloadCriacaoRecomendacao } f
 import { SucessoCriacao } from "../../_shared/SucessoCriacao";
 import { LocalESafraFields } from "../../_shared/LocalESafraFields";
 import { OperadorField } from "../../_shared/OperadorField";
+import { MaquinaField } from "../../_shared/MaquinaField";
 
 type ProdutoItem = {
   chave: string;
@@ -46,12 +47,14 @@ export default function NovaRecomendacaoAdubacaoPage() {
     talhoes,
     insumos: fertilizantes,
     perfis,
+    maquinas,
     carregando,
     erro: erroCarregamento,
   } = useCatalogoFazenda(["fertilizante", "micronutriente"]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");
+  const [maquinaId, setMaquinaId] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([novoProduto()]);
 
   const [modalidade, setModalidade] = useState<(typeof MODALIDADES)[number]["value"]>("convencional");
@@ -138,6 +141,7 @@ export default function NovaRecomendacaoAdubacaoPage() {
         modalidade,
         profundidade_aplicacao_cm: profundidadeAplicacaoCm ? Number(profundidadeAplicacaoCm) : null,
         observacoes: observacoes || null,
+        maquina_id: maquinaId || null,
       },
       talhoes: talhoesSelecionados.map((t) => ({ talhaoId: t.id, areaHa: t.area_ha })),
       produtos: produtosValidos.map((p) => ({
@@ -173,7 +177,21 @@ export default function NovaRecomendacaoAdubacaoPage() {
   }
 
   if (sucesso) {
-    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} />;
+    const fazendaNome = fazendas.find((f) => f.id === fazendaId)?.nome ?? "";
+    const operadorNome = perfis.find((p) => p.id === operadorPerfilId)?.nome ?? "";
+    const nomesTalhoes = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id)).map((t) => t.nome);
+    const linhasProdutos = produtos
+      .filter((p) => p.insumoId && p.doseKgHa)
+      .map((p) => `• ${fertilizantes.find((i) => i.id === p.insumoId)?.nome ?? "Produto"} — ${p.doseKgHa} kg/ha`);
+    const mensagem = [
+      `🌿 *Recomendação de Adubação* — ${fazendaNome}`,
+      `Talhões: ${nomesTalhoes.join(", ")} (${hectaresSugeridos.toFixed(1)} ha)`,
+      `Operador: ${operadorNome}`,
+      `Aplicação indicada: ${new Date(dataAplicacaoIndicada + "T12:00").toLocaleDateString("pt-BR")}`,
+      "",
+      ...linhasProdutos,
+    ].join("\n");
+    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} mensagemWhatsApp={mensagem} />;
   }
 
   return (
@@ -303,6 +321,8 @@ export default function NovaRecomendacaoAdubacaoPage() {
               placeholder="Ex: 5 (fósforo é imóvel no solo — colocação perto da raiz importa)"
             />
           </label>
+
+          <MaquinaField maquinas={maquinas} maquinaId={maquinaId} setMaquinaId={setMaquinaId} />
         </section>
 
         <section style={sectionStyle}>

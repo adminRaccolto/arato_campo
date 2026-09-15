@@ -10,6 +10,7 @@ import { criarRecomendacao, CONFIG_PLANTIO, type PayloadCriacaoRecomendacao } fr
 import { SucessoCriacao } from "../../_shared/SucessoCriacao";
 import { LocalESafraFields } from "../../_shared/LocalESafraFields";
 import { OperadorField } from "../../_shared/OperadorField";
+import { MaquinaField } from "../../_shared/MaquinaField";
 
 type ProdutoItem = {
   chave: string;
@@ -40,12 +41,14 @@ export default function NovaRecomendacaoPlantioPage() {
     talhoes,
     insumos: sementesInoculantes,
     perfis,
+    maquinas,
     carregando,
     erro: erroCarregamento,
   } = useCatalogoFazenda(["semente", "inoculante"]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");
+  const [maquinaId, setMaquinaId] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([novoProduto()]);
 
   const [populacaoPlantasHa, setPopulacaoPlantasHa] = useState("280000");
@@ -138,6 +141,7 @@ export default function NovaRecomendacaoPlantioPage() {
         profundidade_semeadura_cm: profundidadeCm ? Number(profundidadeCm) : null,
         velocidade_plantio_kmh: velocidadeKmh ? Number(velocidadeKmh) : null,
         observacoes: observacoes || null,
+        maquina_id: maquinaId || null,
       },
       talhoes: talhoesSelecionados.map((t) => ({ talhaoId: t.id, areaHa: t.area_ha })),
       produtos: produtosValidos.map((p) => ({
@@ -175,7 +179,21 @@ export default function NovaRecomendacaoPlantioPage() {
   }
 
   if (sucesso) {
-    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} />;
+    const fazendaNome = fazendas.find((f) => f.id === fazendaId)?.nome ?? "";
+    const operadorNome = perfis.find((p) => p.id === operadorPerfilId)?.nome ?? "";
+    const nomesTalhoes = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id)).map((t) => t.nome);
+    const linhasProdutos = produtos
+      .filter((p) => p.insumoId && p.dosePorHa)
+      .map((p) => `• ${sementesInoculantes.find((i) => i.id === p.insumoId)?.nome ?? "Produto"} — ${p.dosePorHa} ${p.unidadeDose}/ha`);
+    const mensagem = [
+      `🌱 *Recomendação de Plantio* — ${fazendaNome}`,
+      `Talhões: ${nomesTalhoes.join(", ")} (${hectaresSugeridos.toFixed(1)} ha)`,
+      `Operador: ${operadorNome}`,
+      `Plantio indicado: ${new Date(dataAplicacaoIndicada + "T12:00").toLocaleDateString("pt-BR")}`,
+      "",
+      ...linhasProdutos,
+    ].join("\n");
+    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} mensagemWhatsApp={mensagem} />;
   }
 
   return (
@@ -352,6 +370,8 @@ export default function NovaRecomendacaoPlantioPage() {
             Velocidade mais baixa preserva a precisão de singulação em plantadeiras de alta
             população.
           </p>
+
+          <MaquinaField maquinas={maquinas} maquinaId={maquinaId} setMaquinaId={setMaquinaId} />
         </section>
 
         <section style={sectionStyle}>

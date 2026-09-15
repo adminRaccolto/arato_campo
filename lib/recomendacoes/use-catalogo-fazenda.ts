@@ -8,6 +8,7 @@ export type Ciclo = { id: string; descricao: string; cultura: string; data_inici
 export type Talhao = { id: string; nome: string; area_ha: number; kml_url: string | null };
 export type Insumo = { id: string; nome: string; unidade: string };
 export type Perfil = { id: string; nome: string | null };
+export type Maquina = { id: string; nome: string; tipo: string | null };
 
 export function escolherAtivoPorData<T extends { data_inicio: string; data_fim: string }>(
   itens: T[]
@@ -42,6 +43,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
   const [talhoes, setTalhoes] = useState<Talhao[]>([]);
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
+  const [maquinas, setMaquinas] = useState<Maquina[]>([]);
 
   const [carregandoFazendas, setCarregandoFazendas] = useState(true);
   const [erroFazendas, setErroFazendas] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
         insumosQuery = insumosQuery.in("categoria", categoriasKey.split(","));
       }
 
-      const [talhoesRes, anosSafraRes, insumosRes, perfisRes] = await Promise.all([
+      const [talhoesRes, anosSafraRes, insumosRes, perfisRes, maquinasRes] = await Promise.all([
         supabase.from("talhoes").select("id, nome, area_ha, kml_url").eq("fazenda_id", fazendaId).order("nome"),
         supabase
           .from("anos_safra")
@@ -106,11 +108,13 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
           .order("data_inicio", { ascending: false }),
         insumosQuery,
         supabase.from("perfis").select("id, nome").eq("conta_id", contaIdParam).eq("produto", "campo").order("nome"),
+        supabase.from("maquinas").select("id, nome, tipo").eq("fazenda_id", fazendaId).eq("ativa", true).order("nome"),
       ]);
 
       setTalhoes(talhoesRes.data ?? []);
       setInsumos(insumosRes.data ?? []);
       setPerfis(perfisRes.data ?? []);
+      setMaquinas(maquinasRes.data ?? []);
 
       const listaAnosSafra = anosSafraRes.data ?? [];
       setAnosSafra(listaAnosSafra);
@@ -163,6 +167,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
     talhoes,
     insumos,
     perfis,
+    maquinas,
     carregando: auth.carregando || carregandoFazendas,
     erro: auth.erro ?? erroFazendas,
     setErro: setErroFazendas,

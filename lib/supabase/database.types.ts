@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       abastecimentos: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           bomba_id: string | null
           ciclo_id: string | null
           created_at: string | null
@@ -28,19 +30,25 @@ export type Database = {
           insumo_id: string | null
           insumo_movimentado_id: string | null
           km: number | null
+          lancado_por_perfil_id: string | null
           lancamento_id: string | null
           maquina_descricao: string | null
           maquina_id: string | null
+          motivo_rejeicao: string | null
           observacao: string | null
           operador: string | null
+          origem_lancamento: string
           origem_op_id: string | null
           patrimonio: string | null
           quantidade_l: number
+          status_campo: string
           tipo_combustivel: string | null
           valor_total: number
           valor_unitario: number
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           bomba_id?: string | null
           ciclo_id?: string | null
           created_at?: string | null
@@ -53,19 +61,25 @@ export type Database = {
           insumo_id?: string | null
           insumo_movimentado_id?: string | null
           km?: number | null
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           maquina_descricao?: string | null
           maquina_id?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
           operador?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           patrimonio?: string | null
           quantidade_l: number
+          status_campo?: string
           tipo_combustivel?: string | null
           valor_total?: number
           valor_unitario?: number
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           bomba_id?: string | null
           ciclo_id?: string | null
           created_at?: string | null
@@ -78,19 +92,30 @@ export type Database = {
           insumo_id?: string | null
           insumo_movimentado_id?: string | null
           km?: number | null
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           maquina_descricao?: string | null
           maquina_id?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
           operador?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           patrimonio?: string | null
           quantidade_l?: number
+          status_campo?: string
           tipo_combustivel?: string | null
           valor_total?: number
           valor_unitario?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "abastecimentos_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "abastecimentos_bomba_id_fkey"
             columns: ["bomba_id"]
@@ -131,6 +156,13 @@ export type Database = {
             columns: ["insumo_movimentado_id"]
             isOneToOne: false
             referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abastecimentos_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -553,6 +585,7 @@ export type Database = {
           id: string
           lancado_por_perfil_id: string | null
           lancamento_id: string | null
+          maquina_id: string | null
           modalidade: string
           motivo_rejeicao: string | null
           observacao: string | null
@@ -574,6 +607,7 @@ export type Database = {
           id?: string
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          maquina_id?: string | null
           modalidade?: string
           motivo_rejeicao?: string | null
           observacao?: string | null
@@ -595,6 +629,7 @@ export type Database = {
           id?: string
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          maquina_id?: string | null
           modalidade?: string
           motivo_rejeicao?: string | null
           observacao?: string | null
@@ -634,6 +669,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "adubacoes_base_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "adubacoes_base_safra_id_fkey"
             columns: ["safra_id"]
             isOneToOne: false
@@ -655,6 +697,7 @@ export type Database = {
           created_at: string | null
           custo_total: number | null
           dose_kg_ha: number | null
+          dose_kg_ha_recomendada: number | null
           fazenda_id: string
           id: string
           insumo_id: string | null
@@ -667,6 +710,7 @@ export type Database = {
           created_at?: string | null
           custo_total?: number | null
           dose_kg_ha?: number | null
+          dose_kg_ha_recomendada?: number | null
           fazenda_id: string
           id?: string
           insumo_id?: string | null
@@ -679,6 +723,7 @@ export type Database = {
           created_at?: string | null
           custo_total?: number | null
           dose_kg_ha?: number | null
+          dose_kg_ha_recomendada?: number | null
           fazenda_id?: string
           id?: string
           insumo_id?: string | null
@@ -5305,6 +5350,7 @@ export type Database = {
           id: string
           lancado_por_perfil_id: string | null
           lancamento_id: string | null
+          maquina_id: string | null
           motivo_rejeicao: string | null
           observacao: string | null
           origem_lancamento: string
@@ -5325,6 +5371,7 @@ export type Database = {
           id?: string
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          maquina_id?: string | null
           motivo_rejeicao?: string | null
           observacao?: string | null
           origem_lancamento?: string
@@ -5345,6 +5392,7 @@ export type Database = {
           id?: string
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          maquina_id?: string | null
           motivo_rejeicao?: string | null
           observacao?: string | null
           origem_lancamento?: string
@@ -5382,6 +5430,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "correcoes_solo_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "correcoes_solo_safra_id_fkey"
             columns: ["safra_id"]
             isOneToOne: false
@@ -5403,6 +5458,7 @@ export type Database = {
           created_at: string | null
           custo_total: number | null
           dose_ton_ha: number | null
+          dose_ton_ha_recomendada: number | null
           fazenda_id: string
           id: string
           insumo_id: string | null
@@ -5415,6 +5471,7 @@ export type Database = {
           created_at?: string | null
           custo_total?: number | null
           dose_ton_ha?: number | null
+          dose_ton_ha_recomendada?: number | null
           fazenda_id: string
           id?: string
           insumo_id?: string | null
@@ -5427,6 +5484,7 @@ export type Database = {
           created_at?: string | null
           custo_total?: number | null
           dose_ton_ha?: number | null
+          dose_ton_ha_recomendada?: number | null
           fazenda_id?: string
           id?: string
           insumo_id?: string | null
@@ -13136,12 +13194,14 @@ export type Database = {
           data_colheita_prev: string | null
           data_plantio: string
           dose_kg_ha: number | null
+          dose_kg_ha_recomendada: number | null
           fazenda_id: string | null
           id: string
           insumo_id: string | null
           lancado_por_perfil_id: string | null
           lancamento_id: string | null
           lote_semente: string | null
+          maquina_id: string | null
           moeda: string | null
           motivo_rejeicao: string | null
           observacao: string | null
@@ -13168,12 +13228,14 @@ export type Database = {
           data_colheita_prev?: string | null
           data_plantio: string
           dose_kg_ha?: number | null
+          dose_kg_ha_recomendada?: number | null
           fazenda_id?: string | null
           id?: string
           insumo_id?: string | null
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           lote_semente?: string | null
+          maquina_id?: string | null
           moeda?: string | null
           motivo_rejeicao?: string | null
           observacao?: string | null
@@ -13200,12 +13262,14 @@ export type Database = {
           data_colheita_prev?: string | null
           data_plantio?: string
           dose_kg_ha?: number | null
+          dose_kg_ha_recomendada?: number | null
           fazenda_id?: string | null
           id?: string
           insumo_id?: string | null
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           lote_semente?: string | null
+          maquina_id?: string | null
           moeda?: string | null
           motivo_rejeicao?: string | null
           observacao?: string | null
@@ -13255,6 +13319,13 @@ export type Database = {
             columns: ["lancado_por_perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantios_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
             referencedColumns: ["id"]
           },
           {
@@ -13456,6 +13527,7 @@ export type Database = {
           custo_ha: number | null
           custo_total: number | null
           dose_ha: number | null
+          dose_recomendada_ha: number | null
           fazenda_id: string | null
           id: string
           insumo_id: string | null
@@ -13470,6 +13542,7 @@ export type Database = {
           custo_ha?: number | null
           custo_total?: number | null
           dose_ha?: number | null
+          dose_recomendada_ha?: number | null
           fazenda_id?: string | null
           id?: string
           insumo_id?: string | null
@@ -13484,6 +13557,7 @@ export type Database = {
           custo_ha?: number | null
           custo_total?: number | null
           dose_ha?: number | null
+          dose_recomendada_ha?: number | null
           fazenda_id?: string | null
           id?: string
           insumo_id?: string | null
@@ -13535,6 +13609,7 @@ export type Database = {
           id: string
           lancado_por_perfil_id: string | null
           lancamento_id: string | null
+          maquina_id: string | null
           motivo_rejeicao: string | null
           num_tanques: number | null
           observacao: string | null
@@ -13564,6 +13639,7 @@ export type Database = {
           id?: string
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          maquina_id?: string | null
           motivo_rejeicao?: string | null
           num_tanques?: number | null
           observacao?: string | null
@@ -13593,6 +13669,7 @@ export type Database = {
           id?: string
           lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          maquina_id?: string | null
           motivo_rejeicao?: string | null
           num_tanques?: number | null
           observacao?: string | null
@@ -13632,6 +13709,13 @@ export type Database = {
             columns: ["lancado_por_perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pulverizacoes_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
             referencedColumns: ["id"]
           },
           {
@@ -14029,6 +14113,7 @@ export type Database = {
           hectares_realizados: number | null
           hectares_sugeridos: number
           id: string
+          maquina_id: string | null
           modalidade: string
           observacoes: string | null
           profundidade_aplicacao_cm: number | null
@@ -14044,6 +14129,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos: number
           id?: string
+          maquina_id?: string | null
           modalidade?: string
           observacoes?: string | null
           profundidade_aplicacao_cm?: number | null
@@ -14059,6 +14145,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos?: number
           id?: string
+          maquina_id?: string | null
           modalidade?: string
           observacoes?: string | null
           profundidade_aplicacao_cm?: number | null
@@ -14083,6 +14170,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_adubacao_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
             referencedColumns: ["id"]
           },
         ]
@@ -14172,6 +14266,7 @@ export type Database = {
           hectares_realizados: number | null
           hectares_sugeridos: number
           id: string
+          maquina_id: string | null
           observacoes: string | null
           profundidade_incorporacao_cm: number | null
         }
@@ -14187,6 +14282,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos: number
           id?: string
+          maquina_id?: string | null
           observacoes?: string | null
           profundidade_incorporacao_cm?: number | null
         }
@@ -14202,6 +14298,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos?: number
           id?: string
+          maquina_id?: string | null
           observacoes?: string | null
           profundidade_incorporacao_cm?: number | null
         }
@@ -14225,6 +14322,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_corretivo_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
             referencedColumns: ["id"]
           },
         ]
@@ -14318,6 +14422,7 @@ export type Database = {
           hectares_realizados: number | null
           hectares_sugeridos: number
           id: string
+          maquina_id: string | null
           observacoes: string | null
           populacao_plantas_ha: number | null
           profundidade_semeadura_cm: number | null
@@ -14336,6 +14441,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos: number
           id?: string
+          maquina_id?: string | null
           observacoes?: string | null
           populacao_plantas_ha?: number | null
           profundidade_semeadura_cm?: number | null
@@ -14354,6 +14460,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos?: number
           id?: string
+          maquina_id?: string | null
           observacoes?: string | null
           populacao_plantas_ha?: number | null
           profundidade_semeadura_cm?: number | null
@@ -14379,6 +14486,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_plantio_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
             referencedColumns: ["id"]
           },
         ]
@@ -14474,6 +14588,7 @@ export type Database = {
           hectares_realizados: number | null
           hectares_sugeridos: number
           id: string
+          maquina_id: string | null
           observacoes: string | null
           pressao_bar: number
           temperatura_max_c: number | null
@@ -14496,6 +14611,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos: number
           id?: string
+          maquina_id?: string | null
           observacoes?: string | null
           pressao_bar: number
           temperatura_max_c?: number | null
@@ -14518,6 +14634,7 @@ export type Database = {
           hectares_realizados?: number | null
           hectares_sugeridos?: number
           id?: string
+          maquina_id?: string | null
           observacoes?: string | null
           pressao_bar?: number
           temperatura_max_c?: number | null
@@ -14548,6 +14665,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "maquinas"
             referencedColumns: ["id"]
           },
         ]
@@ -15526,7 +15650,8 @@ export type Database = {
           created_at: string | null
           data: string
           descricao: string
-          fazenda_id: string
+          fazenda_id: string | null
+          fornecedor: string | null
           id: string
           tipo: string
           valor: number
@@ -15537,7 +15662,8 @@ export type Database = {
           created_at?: string | null
           data: string
           descricao: string
-          fazenda_id: string
+          fazenda_id?: string | null
+          fornecedor?: string | null
           id?: string
           tipo: string
           valor: number
@@ -15548,7 +15674,8 @@ export type Database = {
           created_at?: string | null
           data?: string
           descricao?: string
-          fazenda_id?: string
+          fazenda_id?: string | null
+          fornecedor?: string | null
           id?: string
           tipo?: string
           valor?: number
@@ -17110,6 +17237,8 @@ export type Database = {
         Args: { p_fazenda_id: string }
         Returns: boolean
       }
+      rls_minha_conta_id: { Args: never; Returns: string }
+      rls_sou_raccotlo: { Args: never; Returns: boolean }
       set_talhao_area_plantada: {
         Args: { p_area: number; p_id: string }
         Returns: undefined

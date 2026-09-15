@@ -13,7 +13,19 @@ export type LinhaExecucao = {
   execucaoId: string;
   talhaoId: string;
   areaHa: number;
-  itens: { id: string; insumoId: string; nome: string; dose: number; unidade?: string; lote?: string | null }[];
+  itens: {
+    id: string;
+    insumoId: string;
+    nome: string;
+    dose: number;
+    // dose que a recomendação original pedia pra esse produto — diferente
+    // de `dose` (a que o operador confirmou/ajustou no fechamento) quando o
+    // aplicado diverge do recomendado (CLAUDE.md 7, pedido 15/set/2026).
+    // null quando não há recomendação de origem pra comparar.
+    doseRecomendada: number | null;
+    unidade?: string;
+    lote?: string | null;
+  }[];
 };
 
 type PayloadBase = {
@@ -26,6 +38,9 @@ type PayloadBase = {
   dataRealizada: string;
   hectaresRealizados: number;
   observacoes: string | null;
+  // máquina confirmada (ou trocada) pelo operador no fechamento — pode
+  // divergir da máquina sugerida na recomendação, mesmo padrão da dose.
+  maquinaId: string | null;
 };
 
 export type PayloadFechamentoPulverizacao = PayloadBase & {
@@ -51,6 +66,7 @@ export async function executarFechamentoPulverizacao(
         vazao_l_ha: payload.vazaoLHa,
         estadio_fenologico: payload.estagioFenologico,
         observacao: payload.observacoes,
+        maquina_id: payload.maquinaId,
         status_campo: "pendente",
         origem_lancamento: "app_campo",
         lancado_por_perfil_id: payload.perfilId,
@@ -70,6 +86,7 @@ export async function executarFechamentoPulverizacao(
           insumo_id: item.insumoId,
           nome_produto: item.nome,
           dose_ha: item.dose,
+          dose_recomendada_ha: item.doseRecomendada,
           unidade: item.unidade,
         })
       )
@@ -98,6 +115,7 @@ export async function executarFechamentoAdubacao(
         area_ha: l.areaHa,
         modalidade: payload.modalidade,
         observacao: payload.observacoes,
+        maquina_id: payload.maquinaId,
         status_campo: "pendente",
         origem_lancamento: "app_campo",
         lancado_por_perfil_id: payload.perfilId,
@@ -117,6 +135,7 @@ export async function executarFechamentoAdubacao(
           insumo_id: item.insumoId,
           produto_nome: item.nome,
           dose_kg_ha: item.dose,
+          dose_kg_ha_recomendada: item.doseRecomendada,
         })
       )
     )
@@ -144,6 +163,7 @@ export async function executarFechamentoCorretivo(
         area_ha: l.areaHa,
         finalidade: payload.finalidade,
         observacao: payload.observacoes,
+        maquina_id: payload.maquinaId,
         status_campo: "pendente",
         origem_lancamento: "app_campo",
         lancado_por_perfil_id: payload.perfilId,
@@ -163,6 +183,7 @@ export async function executarFechamentoCorretivo(
           insumo_id: item.insumoId,
           produto_nome: item.nome,
           dose_ton_ha: item.dose,
+          dose_ton_ha_recomendada: item.doseRecomendada,
         })
       )
     )
@@ -193,6 +214,8 @@ export async function executarFechamentoPlantio(
       variedade: item.nome,
       lote_semente: item.lote ?? null,
       dose_kg_ha: item.unidade === "kg" ? item.dose : null,
+      dose_kg_ha_recomendada: item.unidade === "kg" ? item.doseRecomendada : null,
+      maquina_id: payload.maquinaId,
       observacao:
         item.unidade === "kg"
           ? payload.observacoes

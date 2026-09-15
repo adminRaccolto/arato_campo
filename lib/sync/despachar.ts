@@ -19,6 +19,7 @@ import {
   type PayloadFechamentoPlantio,
 } from "@/lib/tarefas/executores";
 import { executarMonitoramento, type PayloadMonitoramento } from "@/lib/monitoramento/executor";
+import { executarAbastecimento, type PayloadAbastecimento } from "@/lib/abastecimento/executor";
 
 /**
  * Reexecuta uma operação da fila local, despachando pro executor certo
@@ -47,5 +48,7 @@ export async function despacharOperacao(op: OperacaoPendente): Promise<{ ok: boo
       return executarFechamentoPlantio(supabase, op.payload as unknown as PayloadFechamentoPlantio);
     case "monitoramento":
       return executarMonitoramento(supabase, op.payload as unknown as PayloadMonitoramento);
+    case "abastecimento":
+      return executarAbastecimento(supabase, op.payload as unknown as PayloadAbastecimento);
   }
 }

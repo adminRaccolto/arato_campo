@@ -10,6 +10,7 @@ import { criarRecomendacao, CONFIG_PULVERIZACAO, type PayloadCriacaoRecomendacao
 import { SucessoCriacao } from "../../_shared/SucessoCriacao";
 import { LocalESafraFields } from "../../_shared/LocalESafraFields";
 import { OperadorField } from "../../_shared/OperadorField";
+import { MaquinaField } from "../../_shared/MaquinaField";
 
 type ProdutoItem = {
   chave: string;
@@ -79,12 +80,14 @@ function NovaRecomendacaoPulverizacaoForm() {
     talhoes,
     insumos: insumosDefensivos,
     perfis,
+    maquinas,
     carregando,
     erro: erroCarregamento,
   } = useCatalogoFazenda(["defensivo"]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");
+  const [maquinaId, setMaquinaId] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([novoProduto()]);
 
   const [volumeCaldaLHa, setVolumeCaldaLHa] = useState("150");
@@ -210,6 +213,7 @@ function NovaRecomendacaoPulverizacaoForm() {
         vento_min_kmh: ventoMin ? Number(ventoMin) : null,
         vento_max_kmh: ventoMax ? Number(ventoMax) : null,
         observacoes: observacoes || null,
+        maquina_id: maquinaId || null,
       },
       talhoes: talhoesSelecionados.map((t) => ({ talhaoId: t.id, areaHa: t.area_ha })),
       produtos: produtosValidos.map((p) => ({
@@ -247,7 +251,21 @@ function NovaRecomendacaoPulverizacaoForm() {
   }
 
   if (sucesso) {
-    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} />;
+    const fazendaNome = fazendas.find((f) => f.id === fazendaId)?.nome ?? "";
+    const operadorNome = perfis.find((p) => p.id === operadorPerfilId)?.nome ?? "";
+    const nomesTalhoes = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id)).map((t) => t.nome);
+    const linhasProdutos = produtos
+      .filter((p) => p.insumoId && p.dosePorHa)
+      .map((p) => `• ${insumosDefensivos.find((i) => i.id === p.insumoId)?.nome ?? "Produto"} — ${p.dosePorHa} ${p.unidadeDose}/ha`);
+    const mensagem = [
+      `🌾 *Recomendação de Pulverização* — ${fazendaNome}`,
+      `Talhões: ${nomesTalhoes.join(", ")} (${hectaresSugeridos.toFixed(1)} ha)`,
+      `Operador: ${operadorNome}`,
+      `Aplicação indicada: ${new Date(dataAplicacaoIndicada + "T12:00").toLocaleDateString("pt-BR")}`,
+      "",
+      ...linhasProdutos,
+    ].join("\n");
+    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} mensagemWhatsApp={mensagem} />;
   }
 
   return (
@@ -447,6 +465,8 @@ function NovaRecomendacaoPulverizacaoForm() {
               ))}
             </select>
           </label>
+
+          <MaquinaField maquinas={maquinas} maquinaId={maquinaId} setMaquinaId={setMaquinaId} />
         </section>
 
         <section style={sectionStyle}>

@@ -10,6 +10,7 @@ import { criarRecomendacao, CONFIG_CORRETIVO, type PayloadCriacaoRecomendacao } 
 import { SucessoCriacao } from "../../_shared/SucessoCriacao";
 import { LocalESafraFields } from "../../_shared/LocalESafraFields";
 import { OperadorField } from "../../_shared/OperadorField";
+import { MaquinaField } from "../../_shared/MaquinaField";
 
 type ProdutoItem = {
   chave: string;
@@ -47,12 +48,14 @@ export default function NovaRecomendacaoCorretivoPage() {
     talhoes,
     insumos: corretivos,
     perfis,
+    maquinas,
     carregando,
     erro: erroCarregamento,
   } = useCatalogoFazenda(["corretivo"]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");
+  const [maquinaId, setMaquinaId] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([novoProduto()]);
 
   const [finalidade, setFinalidade] = useState<(typeof FINALIDADES)[number]["value"]>("calcario");
@@ -139,6 +142,7 @@ export default function NovaRecomendacaoCorretivoPage() {
         hectares_sugeridos: hectaresSugeridos,
         finalidade,
         profundidade_incorporacao_cm: profundidadeIncorporacaoCm ? Number(profundidadeIncorporacaoCm) : null,
+        maquina_id: maquinaId || null,
         observacoes: observacoes || null,
       },
       talhoes: talhoesSelecionados.map((t) => ({ talhaoId: t.id, areaHa: t.area_ha })),
@@ -176,7 +180,21 @@ export default function NovaRecomendacaoCorretivoPage() {
   }
 
   if (sucesso) {
-    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} />;
+    const fazendaNome = fazendas.find((f) => f.id === fazendaId)?.nome ?? "";
+    const operadorNome = perfis.find((p) => p.id === operadorPerfilId)?.nome ?? "";
+    const nomesTalhoes = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id)).map((t) => t.nome);
+    const linhasProdutos = produtos
+      .filter((p) => p.insumoId && p.doseTonHa)
+      .map((p) => `• ${corretivos.find((i) => i.id === p.insumoId)?.nome ?? "Produto"} — ${p.doseTonHa} ton/ha`);
+    const mensagem = [
+      `⚗️ *Recomendação de Corretivo* — ${fazendaNome}`,
+      `Talhões: ${nomesTalhoes.join(", ")} (${hectaresSugeridos.toFixed(1)} ha)`,
+      `Operador: ${operadorNome}`,
+      `Aplicação indicada: ${new Date(dataAplicacaoIndicada + "T12:00").toLocaleDateString("pt-BR")}`,
+      "",
+      ...linhasProdutos,
+    ].join("\n");
+    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} mensagemWhatsApp={mensagem} />;
   }
 
   return (
@@ -235,6 +253,8 @@ export default function NovaRecomendacaoCorretivoPage() {
               placeholder="Superficial (0) ou incorporado (ex: 20)"
             />
           </label>
+
+          <MaquinaField maquinas={maquinas} maquinaId={maquinaId} setMaquinaId={setMaquinaId} />
         </section>
 
         <section style={sectionStyle}>

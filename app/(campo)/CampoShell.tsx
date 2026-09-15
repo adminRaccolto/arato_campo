@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/recomendacoes/pulverizacao/nova", label: "Pulverização", icone: "💧" },
   { href: "/recomendacoes/adubacao/nova", label: "Adubação", icone: "🌿" },
   { href: "/recomendacoes/corretivo/nova", label: "Corretivo", icone: "⚗️" },
+  { href: "/abastecimento/nova", label: "Abastecimento", icone: "⛽" },
 ] as const;
 
 // Só aparece pra quem pode aprovar — mantém o menu enxuto pra

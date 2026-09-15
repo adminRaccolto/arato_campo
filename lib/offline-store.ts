@@ -7,6 +7,11 @@
 // de uma recomendação (que vira Tarefa) ou é um Monitoramento. `payload`
 // carrega o registro principal; `itens` carrega as linhas de tabelas filhas
 // (produtos/talhões) quando a operação grava em mais de uma tabela.
+// `abastecimento` é a exceção que confirma a regra: não faz sentido um
+// Gerente Campo "recomendar" um abastecimento com antecedência, então o
+// operador lança direto, igual a monitoramento (mas com aprovação de estoque,
+// diferente de monitoramento — ver CLAUDE.md 3.1/4.3, item 4 do pedido de
+// 15/set/2026).
 
 export type TipoOperacaoPendente =
   | "recomendacao_pulverizacao"
@@ -17,7 +22,8 @@ export type TipoOperacaoPendente =
   | "fechamento_pulverizacao"
   | "fechamento_adubacao"
   | "fechamento_corretivo"
-  | "fechamento_plantio";
+  | "fechamento_plantio"
+  | "abastecimento";
 
 export interface OperacaoPendente {
   id: string; // UUID local (crypto.randomUUID) — mesmo id usado no insert, pra idempotência

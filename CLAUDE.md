@@ -509,6 +509,37 @@ pendentes pra quem é Gerente Campo).
 
 ## 8. HISTÓRICO
 
+### Sessão de 15 de setembro de 2026 — dose/máquina, abastecimento, WhatsApp
+Quatro funções pedidas pelo dono depois de testar a v1 na tela:
+
+1. **Dose recomendada vs. aplicada** — o operador pode ajustar a dose no fechamento da tarefa
+   (nem sempre o que foi feito bate com o que foi recomendado). As tabelas de execução ganharam
+   uma coluna nova por produto (`dose_recomendada_ha` em `pulverizacao_itens`,
+   `dose_kg_ha_recomendada` em `adubacoes_base_itens` e `plantios`, `dose_ton_ha_recomendada` em
+   `correcoes_solo_itens` — migration `010_dose_maquina_operacoes.sql`) guardando o valor original;
+   a coluna de dose já existente vira a REALIZADA. Aprovações mostra os dois valores lado a lado,
+   destacando em mostarda quando divergem.
+2. **Máquina/equipamento** — reaproveita o cadastro `maquinas` (já existia, sem FK nenhuma ligada
+   a operações de lavoura). `maquina_id` nas 4 recomendações (sugestão do Gerente Campo, opcional)
+   e nas 4 tabelas de execução (confirmação/troca do operador no fechamento) — mesma migration 010.
+3. **Abastecimento** — tela nova (`app/(campo)/abastecimento/nova`), lançamento direto do operador
+   (sem recomendação prévia, mesmo padrão do Monitoramento — não faz sentido "recomendar" um
+   abastecimento com antecedência). Tabela `abastecimentos` já existia completa no schema (bomba,
+   máquina, litros, horímetro, `origem_op_id`), só faltava o pacote de aprovação
+   (`011_status_campo_abastecimentos.sql`, ficou de fora do loop original da 006). Consumo de
+   estoque na aprovação espelha o desktop (`app/estoque/abastecimento/page.tsx` do Arato
+   principal): baixa da bomba (`bombas_combustivel.estoque_atual_l`) quando ela controla o próprio
+   estoque, senão baixa direto do insumo combustível — sem gerar lançamento financeiro, decisão
+   deliberada (fora do escopo do operador de campo, CLAUDE.md 3.2).
+4. **Compartilhar no WhatsApp** — botão manual (não notificação automática) nas telas de sucesso de
+   criação de recomendação e de conclusão de tarefa. Usa o Web Share API nativo (deixa o operador
+   escolher o contato/grupo) com fallback pra link `wa.me` — **decisão: zero infraestrutura de
+   backend**, não usa o bot Evolution API que já existe no Arato principal (`lib/whatsapp-evolution.ts`)
+   porque isso exigiria cadastrar celular por operador (`perfis` não tem esse campo hoje) e um envio
+   automático não era o pedido — o dono foi explícito: "não é automático, é uma tecla de
+   compartilhar". Registrado aqui porque pode ser revisitado se um dia precisar virar notificação de
+   verdade (aí sim precisaria da rota cross-app + telefone por perfil).
+
 ### Sessão de 14 de setembro de 2026 — migrations aplicadas no banco real
 - As 8 migrations rascunho (`db/migrations-draft/001` a `008`) foram revisadas uma última vez e
   **aplicadas de verdade no banco real** (projeto Supabase `ptbougxydvxxdlhywhps`), numa única

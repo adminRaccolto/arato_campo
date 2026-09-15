@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { sectionStyle } from "../recomendacoes/_shared/styles";
 
-type TipoOperacao = "plantio" | "pulverizacao" | "adubacao" | "corretivo";
+type TipoOperacao = "plantio" | "pulverizacao" | "adubacao" | "corretivo" | "abastecimento";
+
+type ProdutoComparado = { nome: string | null; unidade: string | null; doseAplicada: number | null; doseRecomendada: number | null };
 
 type ItemPendente = {
   id: string;
@@ -17,6 +19,8 @@ type ItemPendente = {
   data: string | null;
   detalhe: string;
   lancadoPorPerfilId: string | null;
+  maquinaId: string | null;
+  produtos: ProdutoComparado[];
 };
 
 const TIPO_INFO: Record<TipoOperacao, { label: string; icone: string }> = {
@@ -24,6 +28,7 @@ const TIPO_INFO: Record<TipoOperacao, { label: string; icone: string }> = {
   pulverizacao: { label: "Pulverização", icone: "💧" },
   adubacao: { label: "Adubação", icone: "🌿" },
   corretivo: { label: "Corretivo", icone: "⚗️" },
+  abastecimento: { label: "Abastecimento", icone: "⛽" },
 };
 
 export default function AprovacoesPage() {
@@ -33,6 +38,7 @@ export default function AprovacoesPage() {
   const [itens, setItens] = useState<ItemPendente[]>([]);
   const [fazendaNomePorId, setFazendaNomePorId] = useState<Map<string, string>>(new Map());
   const [perfilNomePorId, setPerfilNomePorId] = useState<Map<string, string>>(new Map());
+  const [maquinaNomePorId, setMaquinaNomePorId] = useState<Map<string, string>>(new Map());
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -71,30 +77,36 @@ export default function AprovacoesPage() {
         return;
       }
 
-      const [plantiosRes, pulverizacoesRes, adubacoesRes, correcoesRes] = await Promise.all([
+      const [plantiosRes, pulverizacoesRes, adubacoesRes, correcoesRes, abastecimentosRes] = await Promise.all([
         supabase
           .from("plantios")
-          .select("id, fazenda_id, area_ha, data_plantio, variedade, lancado_por_perfil_id, talhoes(nome)")
+          .select("id, fazenda_id, area_ha, data_plantio, variedade, lancado_por_perfil_id, maquina_id, dose_kg_ha, dose_kg_ha_recomendada, talhoes(nome)")
           .in("fazenda_id", fazendaIds)
           .eq("status_campo", "pendente"),
         supabase
           .from("pulverizacoes")
-          .select("id, fazenda_id, area_ha, data_inicio, tipo, lancado_por_perfil_id, talhoes(nome)")
+          .select("id, fazenda_id, area_ha, data_inicio, tipo, lancado_por_perfil_id, maquina_id, talhoes(nome)")
           .in("fazenda_id", fazendaIds)
           .eq("status_campo", "pendente"),
         supabase
           .from("adubacoes_base")
-          .select("id, fazenda_id, area_ha, data_aplicacao, modalidade, lancado_por_perfil_id, talhoes(nome)")
+          .select("id, fazenda_id, area_ha, data_aplicacao, modalidade, lancado_por_perfil_id, maquina_id, talhoes(nome)")
           .in("fazenda_id", fazendaIds)
           .eq("status_campo", "pendente"),
         supabase
           .from("correcoes_solo")
-          .select("id, fazenda_id, area_ha, data_aplicacao, finalidade, lancado_por_perfil_id, talhoes(nome)")
+          .select("id, fazenda_id, area_ha, data_aplicacao, finalidade, lancado_por_perfil_id, maquina_id, talhoes(nome)")
+          .in("fazenda_id", fazendaIds)
+          .eq("status_campo", "pendente"),
+        supabase
+          .from("abastecimentos")
+          .select("id, fazenda_id, data, quantidade_l, insumo_id, lancado_por_perfil_id, maquina_id")
           .in("fazenda_id", fazendaIds)
           .eq("status_campo", "pendente"),
       ]);
 
-      const erroConsulta = plantiosRes.error ?? pulverizacoesRes.error ?? adubacoesRes.error ?? correcoesRes.error;
+      const erroConsulta =
+        plantiosRes.error ?? pulverizacoesRes.error ?? adubacoesRes.error ?? correcoesRes.error ?? abastecimentosRes.error;
       if (erroConsulta) {
         setErro(`Não foi possível carregar pendências: ${erroConsulta.message}.`);
         setCarregando(false);
@@ -106,6 +118,7 @@ export default function AprovacoesPage() {
         fazenda_id: string;
         area_ha: number | null;
         lancado_por_perfil_id: string | null;
+        maquina_id: string | null;
         talhoes: { nome: string } | { nome: string }[] | null;
       };
       function nomeTalhao(x: LinhaJoin): string | null {
@@ -113,8 +126,45 @@ export default function AprovacoesPage() {
         return Array.isArray(x.talhoes) ? (x.talhoes[0]?.nome ?? null) : x.talhoes.nome;
       }
 
+      // Produtos/doses de cada tipo vêm em lote (uma query por tipo, não uma
+      // por item) — comparação recomendado × aplicado (CLAUDE.md 7, pedido
+      // 15/set/2026). `plantios` já tem a dose na própria linha (sem tabela
+      // de itens); os outros 3 têm tabela filha.
+      const idsPulv = (pulverizacoesRes.data ?? []).map((x) => x.id);
+      const idsAdub = (adubacoesRes.data ?? []).map((x) => x.id);
+      const idsCorr = (correcoesRes.data ?? []).map((x) => x.id);
+
+      const [itensPulvRes, itensAdubRes, itensCorrRes] = await Promise.all([
+        idsPulv.length
+          ? supabase.from("pulverizacao_itens").select("pulverizacao_id, nome_produto, unidade, dose_ha, dose_recomendada_ha").in("pulverizacao_id", idsPulv)
+          : Promise.resolve({ data: [] as { pulverizacao_id: string; nome_produto: string; unidade: string; dose_ha: number; dose_recomendada_ha: number | null }[] }),
+        idsAdub.length
+          ? supabase.from("adubacoes_base_itens").select("adubacao_id, produto_nome, dose_kg_ha, dose_kg_ha_recomendada").in("adubacao_id", idsAdub)
+          : Promise.resolve({ data: [] as { adubacao_id: string; produto_nome: string; dose_kg_ha: number; dose_kg_ha_recomendada: number | null }[] }),
+        idsCorr.length
+          ? supabase.from("correcoes_solo_itens").select("correcao_id, produto_nome, dose_ton_ha, dose_ton_ha_recomendada").in("correcao_id", idsCorr)
+          : Promise.resolve({ data: [] as { correcao_id: string; produto_nome: string; dose_ton_ha: number; dose_ton_ha_recomendada: number | null }[] }),
+      ]);
+
+      function produtosDe<T>(lista: T[] | null, chave: keyof T, id: string): T[] {
+        return (lista ?? []).filter((x) => x[chave] === id);
+      }
+
+      const idsCombustivel = Array.from(
+        new Set((abastecimentosRes.data ?? []).map((a) => a.insumo_id).filter((id): id is string => Boolean(id)))
+      );
+      const { data: combustiveisData } = idsCombustivel.length
+        ? await supabase.from("insumos").select("id, nome").in("id", idsCombustivel)
+        : { data: [] as { id: string; nome: string }[] };
+      const nomeCombustivelPorId = new Map((combustiveisData ?? []).map((c) => [c.id, c.nome]));
+
       const todos: ItemPendente[] = [
-        ...((plantiosRes.data ?? []) as unknown as (LinhaJoin & { data_plantio: string; variedade: string })[]).map((x) => ({
+        ...((plantiosRes.data ?? []) as unknown as (LinhaJoin & {
+          data_plantio: string;
+          variedade: string;
+          dose_kg_ha: number | null;
+          dose_kg_ha_recomendada: number | null;
+        })[]).map((x) => ({
           id: x.id,
           tabela: "plantios",
           tipo: "plantio" as const,
@@ -124,6 +174,11 @@ export default function AprovacoesPage() {
           data: x.data_plantio,
           detalhe: x.variedade,
           lancadoPorPerfilId: x.lancado_por_perfil_id,
+          maquinaId: x.maquina_id,
+          produtos:
+            x.dose_kg_ha != null
+              ? [{ nome: x.variedade, unidade: "kg/ha", doseAplicada: x.dose_kg_ha, doseRecomendada: x.dose_kg_ha_recomendada }]
+              : [],
         })),
         ...((pulverizacoesRes.data ?? []) as unknown as (LinhaJoin & { data_inicio: string; tipo: string })[]).map((x) => ({
           id: x.id,
@@ -135,6 +190,13 @@ export default function AprovacoesPage() {
           data: x.data_inicio,
           detalhe: x.tipo,
           lancadoPorPerfilId: x.lancado_por_perfil_id,
+          maquinaId: x.maquina_id,
+          produtos: produtosDe(itensPulvRes.data, "pulverizacao_id", x.id).map((p) => ({
+            nome: p.nome_produto,
+            unidade: p.unidade,
+            doseAplicada: p.dose_ha,
+            doseRecomendada: p.dose_recomendada_ha,
+          })),
         })),
         ...((adubacoesRes.data ?? []) as unknown as (LinhaJoin & { data_aplicacao: string; modalidade: string })[]).map((x) => ({
           id: x.id,
@@ -146,6 +208,13 @@ export default function AprovacoesPage() {
           data: x.data_aplicacao,
           detalhe: x.modalidade,
           lancadoPorPerfilId: x.lancado_por_perfil_id,
+          maquinaId: x.maquina_id,
+          produtos: produtosDe(itensAdubRes.data, "adubacao_id", x.id).map((p) => ({
+            nome: p.produto_nome,
+            unidade: "kg/ha",
+            doseAplicada: p.dose_kg_ha,
+            doseRecomendada: p.dose_kg_ha_recomendada,
+          })),
         })),
         ...((correcoesRes.data ?? []) as unknown as (LinhaJoin & { data_aplicacao: string; finalidade: string })[]).map((x) => ({
           id: x.id,
@@ -157,6 +226,41 @@ export default function AprovacoesPage() {
           data: x.data_aplicacao,
           detalhe: x.finalidade,
           lancadoPorPerfilId: x.lancado_por_perfil_id,
+          maquinaId: x.maquina_id,
+          produtos: produtosDe(itensCorrRes.data, "correcao_id", x.id).map((p) => ({
+            nome: p.produto_nome,
+            unidade: "ton/ha",
+            doseAplicada: p.dose_ton_ha,
+            doseRecomendada: p.dose_ton_ha_recomendada,
+          })),
+        })),
+        ...((abastecimentosRes.data ?? []) as unknown as {
+          id: string;
+          fazenda_id: string;
+          data: string;
+          quantidade_l: number;
+          insumo_id: string | null;
+          lancado_por_perfil_id: string | null;
+          maquina_id: string | null;
+        }[]).map((x) => ({
+          id: x.id,
+          tabela: "abastecimentos",
+          tipo: "abastecimento" as const,
+          fazendaId: x.fazenda_id,
+          talhaoNome: null,
+          areaHa: null,
+          data: x.data,
+          detalhe: x.insumo_id ? (nomeCombustivelPorId.get(x.insumo_id) ?? "Combustível") : "Combustível",
+          lancadoPorPerfilId: x.lancado_por_perfil_id,
+          maquinaId: x.maquina_id,
+          produtos: [
+            {
+              nome: x.insumo_id ? (nomeCombustivelPorId.get(x.insumo_id) ?? "Combustível") : "Combustível",
+              unidade: "L",
+              doseAplicada: x.quantidade_l,
+              doseRecomendada: null,
+            },
+          ],
         })),
       ].sort((a, b) => (a.data ?? "").localeCompare(b.data ?? ""));
 
@@ -166,6 +270,12 @@ export default function AprovacoesPage() {
       if (perfilIds.length > 0) {
         const { data: perfisData } = await supabase.from("perfis").select("id, nome").in("id", perfilIds);
         setPerfilNomePorId(new Map((perfisData ?? []).map((p) => [p.id, p.nome ?? p.id])));
+      }
+
+      const maquinaIds = Array.from(new Set(todos.map((i) => i.maquinaId).filter((id): id is string => Boolean(id))));
+      if (maquinaIds.length > 0) {
+        const { data: maquinasData } = await supabase.from("maquinas").select("id, nome").in("id", maquinaIds);
+        setMaquinaNomePorId(new Map((maquinasData ?? []).map((m) => [m.id, m.nome])));
       }
 
       setCarregando(false);
@@ -280,9 +390,32 @@ export default function AprovacoesPage() {
                   <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
                     {item.data ? new Date(item.data + "T12:00").toLocaleDateString("pt-BR") : ""}
                     {item.lancadoPorPerfilId ? ` · lançado por ${perfilNomePorId.get(item.lancadoPorPerfilId) ?? "—"}` : ""}
+                    {item.maquinaId ? ` · ${maquinaNomePorId.get(item.maquinaId) ?? "máquina"}` : ""}
                   </p>
                 </div>
               </div>
+
+              {item.produtos.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 10px", borderRadius: 8, background: "#F4F6FA" }}>
+                  {item.produtos.map((p, i) => {
+                    const divergiu = p.doseRecomendada != null && p.doseRecomendada !== p.doseAplicada;
+                    return (
+                      <p key={i} style={{ fontSize: 11, color: "var(--azul-escuro)" }}>
+                        {p.nome}:{" "}
+                        <strong style={{ color: divergiu ? "var(--mostarda)" : "var(--verde)" }}>
+                          {p.doseAplicada} {p.unidade}
+                        </strong>
+                        {divergiu && (
+                          <span style={{ color: "var(--azul-petroleo)" }}>
+                            {" "}
+                            (recomendado: {p.doseRecomendada} {p.unidade})
+                          </span>
+                        )}
+                      </p>
+                    );
+                  })}
+                </div>
+              )}
 
               {rejeitandoId === item.id ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
