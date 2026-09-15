@@ -479,6 +479,15 @@ Regras de estilo/paleta são as da seção 2.6 (compartilhadas). A diferença re
 app é usado no campo, no celular — layout, touch targets e tipografia devem ser pensados para tela
 pequena e uso com uma mão / possivelmente com luvas, não é uma versão responsiva do desktop.
 
+**Navegação — decisão revisada (15/set/2026):** a versão inicial usava barra inferior fixa
+(bottom nav), padrão mobile clássico. Depois de ver o resultado real na tela, o dono pediu
+**barra lateral de navegação em todos os ambientes** (inclusive celular) — não só bottom nav com
+sidebar no desktop. Implementado como menu lateral deslizante (drawer, acionado por ícone
+hambúrguer) em qualquer largura de tela, sempre visível/fixo a partir da largura "desktop" (mesmo
+breakpoint de 560px da seção anterior). Mostra o logo do cliente (`contas.logo_url`, já existe no
+schema — mesma coluna usada pelo Arato principal) no topo, com o ícone padrão do App Campo como
+fallback quando a conta não tem logo configurado.
+
 ---
 
 ## 8. HISTÓRICO

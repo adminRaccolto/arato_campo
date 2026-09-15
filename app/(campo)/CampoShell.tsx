@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SyncButton } from "@/components/SyncButton";
@@ -8,20 +9,27 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 const NAV_ITEMS = [
   { href: "/", label: "Início", icone: "🏠" },
   { href: "/tarefas", label: "Tarefas", icone: "📋" },
-  { href: "/monitoramento/nova", label: "Monitor.", icone: "🐛" },
+  { href: "/monitoramento/nova", label: "Monitoramento", icone: "🐛" },
   { href: "/recomendacoes/plantio/nova", label: "Plantio", icone: "🌱" },
-  { href: "/recomendacoes/pulverizacao/nova", label: "Pulv.", icone: "💧" },
+  { href: "/recomendacoes/pulverizacao/nova", label: "Pulverização", icone: "💧" },
   { href: "/recomendacoes/adubacao/nova", label: "Adubação", icone: "🌿" },
   { href: "/recomendacoes/corretivo/nova", label: "Corretivo", icone: "⚗️" },
 ] as const;
 
-// Só aparece pra quem pode aprovar — mantém a barra enxuta pra
+// Só aparece pra quem pode aprovar — mantém o menu enxuto pra
 // Operador/Apontador, que nunca usam essa tela.
-const NAV_ITEM_APROVACOES = { href: "/aprovacoes", label: "Aprovar", icone: "✅" } as const;
+const NAV_ITEM_APROVACOES = { href: "/aprovacoes", label: "Aprovações", icone: "✅" } as const;
+
+const PAPEL_LABEL: Record<string, string> = {
+  gerente_campo: "Gerente Campo",
+  operador: "Operador",
+  apontador: "Apontador",
+};
 
 export function CampoShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const auth = useAuth();
+  const [menuAberto, setMenuAberto] = useState(false);
 
   if (auth.carregando) {
     return (
@@ -70,62 +78,114 @@ export function CampoShell({ children }: { children: React.ReactNode }) {
 
   const itensNav = auth.ehGerenteCampo ? [...NAV_ITEMS, NAV_ITEM_APROVACOES] : NAV_ITEMS;
 
+  function fechar() {
+    setMenuAberto(false);
+  }
+
   return (
     <>
-      <div style={{ paddingBottom: 68 }}>{children}</div>
+      <div className="campo-topbar">
+        <button className="campo-hamburguer" onClick={() => setMenuAberto(true)} aria-label="Abrir menu">
+          ☰
+        </button>
+        <span style={{ fontSize: 14, fontWeight: 600 }}>Campo</span>
+      </div>
 
-      <SyncButton />
+      {menuAberto && <div className="campo-overlay" onClick={fechar} />}
 
-      <nav
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          background: "#fff",
-          borderTop: "0.5px solid var(--azul-petroleo)",
-          paddingBottom: "env(safe-area-inset-bottom, 0)",
-          zIndex: 50,
-        }}
-      >
-        {itensNav.map((item) => {
-          const ativo = item.href === "/" ? path === "/" : path.startsWith(item.href.split("/nova")[0]);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
+      <aside className="campo-sidebar" data-aberto={menuAberto}>
+        <div style={{ padding: "20px 18px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          {auth.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={auth.logoUrl}
+              alt="Logo do cliente"
+              style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", background: "#fff" }}
+            />
+          ) : (
+            <div
               style={{
-                flex: 1,
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background: "var(--azul-petroleo)",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                gap: 2,
-                padding: "8px 2px 6px",
-                textDecoration: "none",
-                color: ativo ? "var(--azul-petroleo)" : "var(--azul-escuro)",
-                borderTop: ativo ? "2.5px solid var(--mostarda)" : "2.5px solid transparent",
-                background: ativo ? "#EAF0F6" : "transparent",
-                minWidth: 0,
+                justifyContent: "center",
+                flexShrink: 0,
               }}
             >
-              <span style={{ fontSize: 17 }}>{item.icone}</span>
-              <span
+              <span style={{ color: "var(--mostarda)", fontSize: 17, fontWeight: 700 }}>C</span>
+            </div>
+          )}
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>Campo</p>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>by Arato</p>
+          </div>
+        </div>
+
+        <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, padding: "8px 10px" }}>
+          {itensNav.map((item) => {
+            const ativo = item.href === "/" ? path === "/" : path.startsWith(item.href.split("/nova")[0]);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={fechar}
                 style={{
-                  fontSize: 9,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "11px 12px",
+                  borderRadius: 8,
+                  fontSize: 13,
                   fontWeight: ativo ? 700 : 400,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  maxWidth: "100%",
+                  color: ativo ? "#fff" : "rgba(255,255,255,0.72)",
+                  background: ativo ? "var(--azul-petroleo)" : "transparent",
                 }}
               >
+                <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icone}</span>
                 {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div
+          style={{
+            padding: "14px 18px",
+            borderTop: "0.5px solid rgba(255,255,255,0.12)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {auth.nome ?? "Operador"}
+            </p>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{PAPEL_LABEL[auth.papel ?? ""] ?? auth.papel}</p>
+          </div>
+          <button
+            onClick={auth.signOut}
+            style={{
+              height: 34,
+              borderRadius: 8,
+              border: "0.5px solid rgba(255,255,255,0.3)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      <div className="campo-content">{children}</div>
+
+      <SyncButton />
     </>
   );
 }

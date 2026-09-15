@@ -30,6 +30,10 @@ type AuthContextValue = {
   // Só gerente_campo aprova/rejeita (decisão 4.3).
   papel: string | null;
   ehGerenteCampo: boolean;
+  // logo do cliente (contas.logo_url) — mesma coluna usada pelo Arato
+  // principal. null = conta sem logo configurado, cai no ícone padrão do
+  // App Campo (ver CampoShell).
+  logoUrl: string | null;
   signOut: () => Promise<void>;
 };
 
@@ -48,6 +52,7 @@ const ESTADO_INICIAL: AuthContextValue = {
   fazendasPermitidas: null,
   papel: null,
   ehGerenteCampo: false,
+  logoUrl: null,
   signOut: async () => {},
 };
 
@@ -89,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         moduloHabilitado: boolean;
         produto: string | null;
         papel: string | null;
+        logoUrl: string | null;
       };
 
       let autorizacao: AutorizacaoCache | null = null;
@@ -120,12 +126,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const { data: moduloRows } = await supabase
-          .from("conta_modulos")
-          .select("habilitado")
-          .eq("conta_id", meuPerfil.conta_id)
-          .eq("modulo", "app_campo")
-          .limit(1);
+        const [{ data: moduloRows }, { data: contaRow }] = await Promise.all([
+          supabase
+            .from("conta_modulos")
+            .select("habilitado")
+            .eq("conta_id", meuPerfil.conta_id)
+            .eq("modulo", "app_campo")
+            .limit(1),
+          supabase.from("contas").select("logo_url").eq("id", meuPerfil.conta_id).maybeSingle(),
+        ]);
 
         autorizacao = {
           perfilId: meuPerfil.id,
@@ -136,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           moduloHabilitado: Boolean(moduloRows?.[0]?.habilitado),
           produto: meuPerfil.produto,
           papel: meuPerfil.papel,
+          logoUrl: contaRow?.logo_url ?? null,
         };
         salvarCache(CACHE_KEY, autorizacao);
       } catch {
@@ -207,6 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fazendasPermitidas: autorizacao.fazendasPermitidas,
         papel: autorizacao.papel,
         ehGerenteCampo: autorizacao.papel === "gerente_campo",
+        logoUrl: autorizacao.logoUrl,
         signOut,
       });
     }

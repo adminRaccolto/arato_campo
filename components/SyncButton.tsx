@@ -95,7 +95,7 @@ export function SyncButton() {
     <div
       style={{
         position: "fixed",
-        bottom: 76,
+        bottom: 16,
         right: 16,
         zIndex: 900,
         display: "flex",

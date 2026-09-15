@@ -52,23 +52,93 @@ input {
   font: inherit;
 }
 
-/* App Campo é mobile-first de verdade (CLAUDE.md 2.6/7) — em tela larga de
-   computador o layout não vira "responsivo pra desktop", só fica contido
-   numa moldura do tamanho de celular, centralizada, em vez de esticar os
-   cards e a barra inferior pra largura toda. `contain: layout` é o que faz
-   os elementos `position: fixed` de dentro (barra inferior, botão de sync)
-   respeitarem a largura da moldura em vez do viewport inteiro. */
+/* Container geral do app — em tela larga de computador não estica de ponta
+   a ponta, fica contido e centralizado (CLAUDE.md 2.6/7). `contain: layout`
+   faz os elementos `position: fixed` de dentro (sidebar, topbar, botão de
+   sync) respeitarem a largura do container em vez do viewport inteiro. */
 @media (min-width: 560px) {
   body {
     background: #dfe4ec;
   }
 
   #app-frame {
-    max-width: 430px;
+    max-width: 900px;
     margin: 0 auto;
     min-height: 100dvh;
     background: var(--fundo);
     box-shadow: 0 0 0 1px rgba(11, 45, 80, 0.08), 0 16px 48px rgba(11, 45, 80, 0.18);
     contain: layout;
+  }
+}
+
+/* Navegação — barra lateral em todos os ambientes (decisão 15/set/2026, ver
+   CLAUDE.md 7): drawer deslizante no celular, acionado pelo ícone hambúrguer
+   da topbar; fixa/sempre visível a partir do breakpoint "desktop". */
+.campo-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px;
+  background: var(--azul-escuro);
+  color: #fff;
+}
+
+.campo-hamburguer {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.campo-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 45, 80, 0.5);
+  z-index: 45;
+}
+
+.campo-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+  background: var(--azul-escuro);
+  transform: translateX(-100%);
+  transition: transform 0.18s ease;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.campo-sidebar[data-aberto="true"] {
+  transform: translateX(0);
+}
+
+.campo-content {
+  min-height: 100dvh;
+}
+
+@media (min-width: 560px) {
+  .campo-topbar {
+    display: none;
+  }
+  .campo-overlay {
+    display: none;
+  }
+  .campo-sidebar {
+    transform: translateX(0);
+  }
+  .campo-content {
+    margin-left: 250px;
   }
 }
