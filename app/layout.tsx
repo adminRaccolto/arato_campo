@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR">
       <body>
-        {children}
+        <div id="app-frame">{children}</div>
         <ServiceWorkerRegister />
       </body>
     </html>
