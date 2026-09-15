@@ -509,6 +509,19 @@ pendentes pra quem é Gerente Campo).
 
 ## 8. HISTÓRICO
 
+### Correção de cascata — exclusão no Arato principal não estornava estoque
+Achado numa auditoria pedida pelo dono (15/set/2026): as funções de exclusão do desktop
+(`excluirPulverizacao`/`excluirAdubacao`/`excluirCorrecao`/`excluirPlantio`, `lib/db.ts` do repo
+Arato principal) fazem o estorno de estoque lendo campos de **quantidade total**
+(`total_consumido`, `quantidade_kg`, `quantidade_ton`) — campos que o App Campo nunca escrevia (só
+calculava dose×área internamente, na hora, dentro de `aprovar-lancamento`, sem persistir). Efeito
+real: excluir no desktop um lançamento do App Campo já aprovado **não devolvia o estoque baixado**,
+silenciosamente (o `if` de checagem desses campos só pula quando vazio, sem erro). Corrigido: o
+fechamento da tarefa (`lib/tarefas/executores.ts`) agora grava esses campos também, calculados com
+a dose aplicada final × área — as linhas do App Campo ficam estruturalmente idênticas às do
+desktop, sem precisar mexer no Arato principal. Não havia problema equivalente do lado da edição
+(o desktop não tem fluxo de edição com lógica de estoque pra essas 4 tabelas hoje).
+
 ### Sessão de 15 de setembro de 2026 — dose/máquina, abastecimento, WhatsApp
 Quatro funções pedidas pelo dono depois de testar a v1 na tela:
 

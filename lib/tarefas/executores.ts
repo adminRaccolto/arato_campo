@@ -88,6 +88,12 @@ export async function executarFechamentoPulverizacao(
           dose_ha: item.dose,
           dose_recomendada_ha: item.doseRecomendada,
           unidade: item.unidade,
+          // total_consumido = mesmo campo que o desktop grava na criação
+          // (dose × área) — sem isso, excluirPulverizacao (lib/db.ts do
+          // Arato principal) não estorna o estoque de linha nenhuma do App
+          // Campo na exclusão, porque o `if (!it.total_consumido) continue`
+          // dela pula silenciosamente quando o campo está vazio.
+          total_consumido: item.dose * l.areaHa,
         })
       )
     )
@@ -136,6 +142,9 @@ export async function executarFechamentoAdubacao(
           produto_nome: item.nome,
           dose_kg_ha: item.dose,
           dose_kg_ha_recomendada: item.doseRecomendada,
+          // mesmo motivo do total_consumido em pulverizacao_itens — sem
+          // isso, excluirAdubacao (lib/db.ts) não estorna o estoque.
+          quantidade_kg: item.dose * l.areaHa,
         })
       )
     )
@@ -184,6 +193,9 @@ export async function executarFechamentoCorretivo(
           produto_nome: item.nome,
           dose_ton_ha: item.dose,
           dose_ton_ha_recomendada: item.doseRecomendada,
+          // mesmo motivo do total_consumido em pulverizacao_itens — sem
+          // isso, excluirCorrecao (lib/db.ts) não estorna o estoque.
+          quantidade_ton: item.dose * l.areaHa,
         })
       )
     )
@@ -215,6 +227,9 @@ export async function executarFechamentoPlantio(
       lote_semente: item.lote ?? null,
       dose_kg_ha: item.unidade === "kg" ? item.dose : null,
       dose_kg_ha_recomendada: item.unidade === "kg" ? item.doseRecomendada : null,
+      // mesmo motivo do total_consumido em pulverizacao_itens — sem isso,
+      // excluirPlantio (lib/db.ts) não estorna o estoque.
+      quantidade_kg: item.unidade === "kg" ? item.dose * l.areaHa : null,
       maquina_id: payload.maquinaId,
       observacao:
         item.unidade === "kg"
