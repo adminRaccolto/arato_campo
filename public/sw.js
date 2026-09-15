@@ -1,22 +1,26 @@
 // Service Worker — App Campo PWA
 // Estratégia (portada de public/sw.js do Arato principal — ver CLAUDE.md 2.9/4.6):
 //   /_next/static/*  → Cache First (assets imutáveis por hash de build)
-//   navegação HTML   → Network First, fallback cache, fallback /login
+//   navegação HTML   → Network First, fallback cache, fallback / (shell autenticado)
 //   /api/, supabase  → Network Only (dados sempre frescos)
 //   imagens/fontes   → Stale-While-Revalidate
 
-const V = "campo-v1";
-const STATIC = "campo-static-v1";
-const SHELL = "campo-shell-v1";
-const IMAGES = "campo-img-v1";
+const V = "campo-v2";
+const STATIC = "campo-static-v2";
+const SHELL = "campo-shell-v2";
+const IMAGES = "campo-img-v2";
 
-const OFFLINE_FALLBACK = "/login";
+// Fallback é "/" (o shell autenticado), não "/login" — o operador já logado
+// precisa conseguir ABRIR o app offline, não ser jogado de volta pro login;
+// o AuthProvider trata a sessão localmente (ver lib/auth/AuthProvider.tsx).
+const OFFLINE_FALLBACK = "/";
+const PRECACHE = ["/", "/login"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((c) => c.add(OFFLINE_FALLBACK).catch(() => {}))
+      .then((c) => Promise.all(PRECACHE.map((url) => c.add(url).catch(() => {}))))
       .then(() => self.skipWaiting())
   );
 });

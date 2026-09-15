@@ -58,12 +58,15 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
     }
     if (!auth.contaId) return;
 
-    async function carregarFazendas(contaIdParam: string, fazendaIdPadrao: string | null) {
-      const { data: fazendasData, error: fazendasError } = await supabase
-        .from("fazendas")
-        .select("id, nome")
-        .eq("conta_id", contaIdParam)
-        .order("nome");
+    async function carregarFazendas(contaIdParam: string, fazendaIdPadrao: string | null, permitidas: string[] | null) {
+      // fazendas_permitidas não-nulo escopa por ele (decisão 4.4) — nulo
+      // (coluna ainda não migrada, ou nunca configurada) cai pro escopo por
+      // conta_id de antes. [] explícito já bloqueou lá no CampoShell
+      // (semAcesso), então nunca chega aqui vazio.
+      let query = supabase.from("fazendas").select("id, nome").order("nome");
+      query = permitidas ? query.in("id", permitidas) : query.eq("conta_id", contaIdParam);
+
+      const { data: fazendasData, error: fazendasError } = await query;
 
       if (fazendasError) {
         setErroFazendas("Não foi possível carregar as fazendas da conta.");
@@ -76,9 +79,9 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
       setCarregandoFazendas(false);
     }
 
-    carregarFazendas(auth.contaId, auth.fazendaIdPadrao);
+    carregarFazendas(auth.contaId, auth.fazendaIdPadrao, auth.fazendasPermitidas);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.carregando, auth.erro, auth.contaId, auth.fazendaIdPadrao]);
+  }, [auth.carregando, auth.erro, auth.contaId, auth.fazendaIdPadrao, auth.fazendasPermitidas]);
 
   useEffect(() => {
     const contaIdAtual = auth.contaId;
@@ -102,7 +105,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
           .eq("fazenda_id", fazendaId)
           .order("data_inicio", { ascending: false }),
         insumosQuery,
-        supabase.from("perfis").select("id, nome").eq("conta_id", contaIdParam).order("nome"),
+        supabase.from("perfis").select("id, nome").eq("conta_id", contaIdParam).eq("produto", "campo").order("nome"),
       ]);
 
       setTalhoes(talhoesRes.data ?? []);
@@ -147,6 +150,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
   return {
     supabase,
     perfilId: auth.perfilId,
+    userId: auth.userId,
     fazendas,
     fazendaId,
     setFazendaId,

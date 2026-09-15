@@ -1,4 +1,4 @@
-export function SucessoConclusao({ pendenteSync, onVoltar }: { pendenteSync?: boolean; onVoltar: () => void }) {
+export function SucessoCriacao({ pendenteSync, onVoltar }: { pendenteSync: boolean; onVoltar: () => void }) {
   return (
     <main
       style={{
@@ -28,11 +28,11 @@ export function SucessoConclusao({ pendenteSync, onVoltar }: { pendenteSync?: bo
         ✓
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
-        Tarefa concluída — lançamento enviado para aprovação.
+        Recomendação criada e tarefa atribuída ao operador.
       </p>
       {pendenteSync && (
         <p style={{ fontSize: 12, color: "var(--mostarda)", fontWeight: 600 }}>
-          📡 Salvo no aparelho — vai sincronizar assim que a conexão voltar.
+          📡 Salva no aparelho — vai sincronizar assim que a conexão voltar.
         </p>
       )}
       <button
@@ -48,7 +48,7 @@ export function SucessoConclusao({ pendenteSync, onVoltar }: { pendenteSync?: bo
           fontWeight: 600,
         }}
       >
-        Voltar às tarefas
+        Voltar ao início
       </button>
     </main>
   );

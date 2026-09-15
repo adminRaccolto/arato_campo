@@ -542,6 +542,8 @@ export type Database = {
       }
       adubacoes_base: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           area_ha: number
           ciclo_id: string | null
           created_at: string | null
@@ -549,14 +551,20 @@ export type Database = {
           data_aplicacao: string
           fazenda_id: string
           id: string
+          lancado_por_perfil_id: string | null
           lancamento_id: string | null
           modalidade: string
+          motivo_rejeicao: string | null
           observacao: string | null
+          origem_lancamento: string
           origem_op_id: string | null
           safra_id: string | null
+          status_campo: string
           talhao_id: string | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha: number
           ciclo_id?: string | null
           created_at?: string | null
@@ -564,14 +572,20 @@ export type Database = {
           data_aplicacao: string
           fazenda_id: string
           id?: string
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           modalidade?: string
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number
           ciclo_id?: string | null
           created_at?: string | null
@@ -579,14 +593,25 @@ export type Database = {
           data_aplicacao?: string
           fazenda_id?: string
           id?: string
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           modalidade?: string
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "adubacoes_base_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "adubacoes_base_ciclo_id_fkey"
             columns: ["ciclo_id"]
@@ -599,6 +624,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adubacoes_base_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -1004,6 +1036,7 @@ export type Database = {
       }
       anos_safra: {
         Row: {
+          conta_id: string | null
           created_at: string | null
           data_fim: string
           data_inicio: string
@@ -1013,6 +1046,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          conta_id?: string | null
           created_at?: string | null
           data_fim: string
           data_inicio: string
@@ -1022,6 +1056,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          conta_id?: string | null
           created_at?: string | null
           data_fim?: string
           data_inicio?: string
@@ -1030,7 +1065,15 @@ export type Database = {
           id?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "anos_safra_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       aplicacao_movimentos: {
         Row: {
@@ -3328,6 +3371,8 @@ export type Database = {
       }
       colheitas: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           area_ha: number | null
           avariados_media: number | null
           ciclo_id: string | null
@@ -3337,11 +3382,15 @@ export type Database = {
           fazenda_id: string | null
           id: string
           impureza_media: number | null
+          lancado_por_perfil_id: string | null
+          motivo_rejeicao: string | null
           observacao: string | null
+          origem_lancamento: string
           origem_op_id: string | null
           produtividade_sc_ha: number | null
           produto: string
           safra_id: string | null
+          status_campo: string
           talhao_id: string | null
           total_kg_bruto: number | null
           total_kg_classificado: number | null
@@ -3350,6 +3399,8 @@ export type Database = {
           variedade: string | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number | null
           avariados_media?: number | null
           ciclo_id?: string | null
@@ -3359,11 +3410,15 @@ export type Database = {
           fazenda_id?: string | null
           id?: string
           impureza_media?: number | null
+          lancado_por_perfil_id?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           produtividade_sc_ha?: number | null
           produto: string
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
           total_kg_bruto?: number | null
           total_kg_classificado?: number | null
@@ -3372,6 +3427,8 @@ export type Database = {
           variedade?: string | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number | null
           avariados_media?: number | null
           ciclo_id?: string | null
@@ -3381,11 +3438,15 @@ export type Database = {
           fazenda_id?: string | null
           id?: string
           impureza_media?: number | null
+          lancado_por_perfil_id?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           produtividade_sc_ha?: number | null
           produto?: string
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
           total_kg_bruto?: number | null
           total_kg_classificado?: number | null
@@ -3394,6 +3455,13 @@ export type Database = {
           variedade?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "colheitas_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "colheitas_ciclo_id_fkey"
             columns: ["ciclo_id"]
@@ -3413,6 +3481,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "colheitas_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -5218,6 +5293,8 @@ export type Database = {
       }
       correcoes_solo: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           area_ha: number
           ciclo_id: string | null
           created_at: string | null
@@ -5226,12 +5303,18 @@ export type Database = {
           fazenda_id: string
           finalidade: string
           id: string
+          lancado_por_perfil_id: string | null
           lancamento_id: string | null
+          motivo_rejeicao: string | null
           observacao: string | null
+          origem_lancamento: string
           safra_id: string | null
+          status_campo: string
           talhao_id: string | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha: number
           ciclo_id?: string | null
           created_at?: string | null
@@ -5240,12 +5323,18 @@ export type Database = {
           fazenda_id: string
           finalidade?: string
           id?: string
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number
           ciclo_id?: string | null
           created_at?: string | null
@@ -5254,12 +5343,23 @@ export type Database = {
           fazenda_id?: string
           finalidade?: string
           id?: string
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "correcoes_solo_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "correcoes_solo_ciclo_id_fkey"
             columns: ["ciclo_id"]
@@ -5272,6 +5372,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "correcoes_solo_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -9315,7 +9422,11 @@ export type Database = {
           nome: string
           observacoes: string | null
           percentual_plantas: number | null
+          recomendacao_adubacao_id: string | null
+          recomendacao_corretivo_id: string | null
           recomendacao_id: string | null
+          recomendacao_plantio_id: string | null
+          recomendacao_pulverizacao_id: string | null
           talhao_id: string | null
           tipo: string
           usuario_id: string | null
@@ -9340,7 +9451,11 @@ export type Database = {
           nome: string
           observacoes?: string | null
           percentual_plantas?: number | null
+          recomendacao_adubacao_id?: string | null
+          recomendacao_corretivo_id?: string | null
           recomendacao_id?: string | null
+          recomendacao_plantio_id?: string | null
+          recomendacao_pulverizacao_id?: string | null
           talhao_id?: string | null
           tipo: string
           usuario_id?: string | null
@@ -9365,7 +9480,11 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           percentual_plantas?: number | null
+          recomendacao_adubacao_id?: string | null
+          recomendacao_corretivo_id?: string | null
           recomendacao_id?: string | null
+          recomendacao_plantio_id?: string | null
+          recomendacao_pulverizacao_id?: string | null
           talhao_id?: string | null
           tipo?: string
           usuario_id?: string | null
@@ -9386,10 +9505,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "monitoramento_pragas_recomendacao_adubacao_id_fkey"
+            columns: ["recomendacao_adubacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_adubacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoramento_pragas_recomendacao_corretivo_id_fkey"
+            columns: ["recomendacao_corretivo_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_corretivo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "monitoramento_pragas_recomendacao_id_fkey"
             columns: ["recomendacao_id"]
             isOneToOne: false
             referencedRelation: "recomendacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoramento_pragas_recomendacao_plantio_id_fkey"
+            columns: ["recomendacao_plantio_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_plantio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoramento_pragas_recomendacao_pulverizacao_id_fkey"
+            columns: ["recomendacao_pulverizacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_pulverizacao"
             referencedColumns: ["id"]
           },
           {
@@ -9490,6 +9637,7 @@ export type Database = {
           lote_semente: string | null
           motivo: string | null
           nf_entrada: string | null
+          nf_entrada_id: string | null
           nf_entrada_item_id: string | null
           observacao: string | null
           operacao: string | null
@@ -9515,6 +9663,7 @@ export type Database = {
           lote_semente?: string | null
           motivo?: string | null
           nf_entrada?: string | null
+          nf_entrada_id?: string | null
           nf_entrada_item_id?: string | null
           observacao?: string | null
           operacao?: string | null
@@ -9540,6 +9689,7 @@ export type Database = {
           lote_semente?: string | null
           motivo?: string | null
           nf_entrada?: string | null
+          nf_entrada_id?: string | null
           nf_entrada_item_id?: string | null
           observacao?: string | null
           operacao?: string | null
@@ -9579,6 +9729,13 @@ export type Database = {
             columns: ["insumo_id"]
             isOneToOne: false
             referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_nf_entrada_id_fkey"
+            columns: ["nf_entrada_id"]
+            isOneToOne: false
+            referencedRelation: "nf_entradas"
             referencedColumns: ["id"]
           },
           {
@@ -10503,6 +10660,7 @@ export type Database = {
           tomador_cnpj: string | null
           tomador_id: string | null
           tomador_nome: string | null
+          tomador_tipo: string | null
           valor_base_iss: number
           valor_deducoes: number
           valor_inss: number
@@ -10544,6 +10702,7 @@ export type Database = {
           tomador_cnpj?: string | null
           tomador_id?: string | null
           tomador_nome?: string | null
+          tomador_tipo?: string | null
           valor_base_iss?: number
           valor_deducoes?: number
           valor_inss?: number
@@ -10585,6 +10744,7 @@ export type Database = {
           tomador_cnpj?: string | null
           tomador_id?: string | null
           tomador_nome?: string | null
+          tomador_tipo?: string | null
           valor_base_iss?: number
           valor_deducoes?: number
           valor_inss?: number
@@ -10647,13 +10807,6 @@ export type Database = {
           {
             foreignKeyName: "nf_servicos_prestador_id_fkey"
             columns: ["prestador_id"]
-            isOneToOne: false
-            referencedRelation: "pessoas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "nf_servicos_tomador_id_fkey"
-            columns: ["tomador_id"]
             isOneToOne: false
             referencedRelation: "pessoas"
             referencedColumns: ["id"]
@@ -12528,10 +12681,12 @@ export type Database = {
           conta_id: string | null
           created_at: string | null
           fazenda_id: string | null
+          fazendas_permitidas: string[] | null
           id: string
           nome: string | null
           papel: string
           parceiro_id: string | null
+          produto: string
           role: string | null
           user_id: string
         }
@@ -12540,10 +12695,12 @@ export type Database = {
           conta_id?: string | null
           created_at?: string | null
           fazenda_id?: string | null
+          fazendas_permitidas?: string[] | null
           id?: string
           nome?: string | null
           papel?: string
           parceiro_id?: string | null
+          produto?: string
           role?: string | null
           user_id: string
         }
@@ -12552,10 +12709,12 @@ export type Database = {
           conta_id?: string | null
           created_at?: string | null
           fazenda_id?: string | null
+          fazendas_permitidas?: string[] | null
           id?: string
           nome?: string | null
           papel?: string
           parceiro_id?: string | null
+          produto?: string
           role?: string | null
           user_id?: string
         }
@@ -12967,6 +13126,8 @@ export type Database = {
       }
       plantios: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           area_ha: number | null
           ciclo_id: string | null
           created_at: string | null
@@ -12978,10 +13139,13 @@ export type Database = {
           fazenda_id: string | null
           id: string
           insumo_id: string | null
+          lancado_por_perfil_id: string | null
           lancamento_id: string | null
           lote_semente: string | null
           moeda: string | null
+          motivo_rejeicao: string | null
           observacao: string | null
+          origem_lancamento: string
           origem_op_id: string | null
           preco_esperado_sc: number | null
           produtividade_esperada: number | null
@@ -12989,10 +13153,13 @@ export type Database = {
           quantidade_semente_kg: number | null
           receita_esperada: number | null
           safra_id: string | null
+          status_campo: string
           talhao_id: string | null
           variedade: string | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number | null
           ciclo_id?: string | null
           created_at?: string | null
@@ -13004,10 +13171,13 @@ export type Database = {
           fazenda_id?: string | null
           id?: string
           insumo_id?: string | null
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           lote_semente?: string | null
           moeda?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           preco_esperado_sc?: number | null
           produtividade_esperada?: number | null
@@ -13015,10 +13185,13 @@ export type Database = {
           quantidade_semente_kg?: number | null
           receita_esperada?: number | null
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
           variedade?: string | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number | null
           ciclo_id?: string | null
           created_at?: string | null
@@ -13030,10 +13203,13 @@ export type Database = {
           fazenda_id?: string | null
           id?: string
           insumo_id?: string | null
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
           lote_semente?: string | null
           moeda?: string | null
+          motivo_rejeicao?: string | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           preco_esperado_sc?: number | null
           produtividade_esperada?: number | null
@@ -13041,10 +13217,18 @@ export type Database = {
           quantidade_semente_kg?: number | null
           receita_esperada?: number | null
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
           variedade?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "plantios_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "plantios_ciclo_id_fkey"
             columns: ["ciclo_id"]
@@ -13064,6 +13248,13 @@ export type Database = {
             columns: ["insumo_id"]
             isOneToOne: false
             referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantios_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -13112,35 +13303,63 @@ export type Database = {
       produtor_inscricoes_estaduais: {
         Row: {
           ativa: boolean
+          bairro: string | null
+          cep: string | null
+          complemento: string | null
           created_at: string | null
+          empresa_id: string | null
           estado: string
           fazenda_id: string | null
           id: string
           inscricao_estadual: string
+          logradouro: string | null
           municipio: string | null
+          municipio_ibge: string | null
+          numero: string | null
           produtor_id: string
         }
         Insert: {
           ativa?: boolean
+          bairro?: string | null
+          cep?: string | null
+          complemento?: string | null
           created_at?: string | null
+          empresa_id?: string | null
           estado?: string
           fazenda_id?: string | null
           id?: string
           inscricao_estadual: string
+          logradouro?: string | null
           municipio?: string | null
+          municipio_ibge?: string | null
+          numero?: string | null
           produtor_id: string
         }
         Update: {
           ativa?: boolean
+          bairro?: string | null
+          cep?: string | null
+          complemento?: string | null
           created_at?: string | null
+          empresa_id?: string | null
           estado?: string
           fazenda_id?: string | null
           id?: string
           inscricao_estadual?: string
+          logradouro?: string | null
           municipio?: string | null
+          municipio_ibge?: string | null
+          numero?: string | null
           produtor_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "produtor_inscricoes_estaduais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "produtor_inscricoes_estaduais_fazenda_id_fkey"
             columns: ["fazenda_id"]
@@ -13173,6 +13392,7 @@ export type Database = {
           inscricao_est: string | null
           logradouro: string | null
           municipio: string | null
+          municipio_ibge: string | null
           nome: string
           numero: string | null
           telefone: string | null
@@ -13193,6 +13413,7 @@ export type Database = {
           inscricao_est?: string | null
           logradouro?: string | null
           municipio?: string | null
+          municipio_ibge?: string | null
           nome: string
           numero?: string | null
           telefone?: string | null
@@ -13213,6 +13434,7 @@ export type Database = {
           inscricao_est?: string | null
           logradouro?: string | null
           municipio?: string | null
+          municipio_ibge?: string | null
           nome?: string
           numero?: string | null
           telefone?: string | null
@@ -13297,6 +13519,8 @@ export type Database = {
       }
       pulverizacoes: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           area_ha: number | null
           calda_total_l: number | null
           cap_tanque_l: number | null
@@ -13309,17 +13533,23 @@ export type Database = {
           fazenda_id: string | null
           fiscal: boolean | null
           id: string
+          lancado_por_perfil_id: string | null
           lancamento_id: string | null
+          motivo_rejeicao: string | null
           num_tanques: number | null
           observacao: string | null
+          origem_lancamento: string
           origem_op_id: string | null
           pre_pos: string | null
           safra_id: string | null
+          status_campo: string
           talhao_id: string | null
           tipo: string
           vazao_l_ha: number | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number | null
           calda_total_l?: number | null
           cap_tanque_l?: number | null
@@ -13332,17 +13562,23 @@ export type Database = {
           fazenda_id?: string | null
           fiscal?: boolean | null
           id?: string
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          motivo_rejeicao?: string | null
           num_tanques?: number | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           pre_pos?: string | null
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
           tipo: string
           vazao_l_ha?: number | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           area_ha?: number | null
           calda_total_l?: number | null
           cap_tanque_l?: number | null
@@ -13355,17 +13591,28 @@ export type Database = {
           fazenda_id?: string | null
           fiscal?: boolean | null
           id?: string
+          lancado_por_perfil_id?: string | null
           lancamento_id?: string | null
+          motivo_rejeicao?: string | null
           num_tanques?: number | null
           observacao?: string | null
+          origem_lancamento?: string
           origem_op_id?: string | null
           pre_pos?: string | null
           safra_id?: string | null
+          status_campo?: string
           talhao_id?: string | null
           tipo?: string
           vazao_l_ha?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pulverizacoes_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pulverizacoes_ciclo_id_fkey"
             columns: ["ciclo_id"]
@@ -13378,6 +13625,13 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pulverizacoes_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -13759,6 +14013,619 @@ export type Database = {
             columns: ["fazenda_id"]
             isOneToOne: false
             referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_adubacao: {
+        Row: {
+          ciclo_id: string
+          criado_em: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada: string | null
+          data_recomendacao: string
+          fazenda_id: string
+          hectares_realizados: number | null
+          hectares_sugeridos: number
+          id: string
+          modalidade: string
+          observacoes: string | null
+          profundidade_aplicacao_cm: number | null
+        }
+        Insert: {
+          ciclo_id: string
+          criado_em?: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada?: string | null
+          data_recomendacao?: string
+          fazenda_id: string
+          hectares_realizados?: number | null
+          hectares_sugeridos: number
+          id?: string
+          modalidade?: string
+          observacoes?: string | null
+          profundidade_aplicacao_cm?: number | null
+        }
+        Update: {
+          ciclo_id?: string
+          criado_em?: string
+          criado_por_perfil_id?: string
+          data_aplicacao_indicada?: string
+          data_aplicacao_realizada?: string | null
+          data_recomendacao?: string
+          fazenda_id?: string
+          hectares_realizados?: number | null
+          hectares_sugeridos?: number
+          id?: string
+          modalidade?: string
+          observacoes?: string | null
+          profundidade_aplicacao_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_adubacao_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "ciclos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_adubacao_criado_por_perfil_id_fkey"
+            columns: ["criado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_adubacao_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_adubacao_produtos: {
+        Row: {
+          dose_kg_ha: number
+          id: string
+          insumo_id: string
+          recomendacao_id: string
+        }
+        Insert: {
+          dose_kg_ha: number
+          id?: string
+          insumo_id: string
+          recomendacao_id: string
+        }
+        Update: {
+          dose_kg_ha?: number
+          id?: string
+          insumo_id?: string
+          recomendacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_adubacao_produtos_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_adubacao_produtos_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_adubacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_adubacao_talhoes: {
+        Row: {
+          area_ha: number
+          id: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Insert: {
+          area_ha: number
+          id?: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Update: {
+          area_ha?: number
+          id?: string
+          recomendacao_id?: string
+          talhao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_adubacao_talhoes_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_adubacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_adubacao_talhoes_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_corretivo: {
+        Row: {
+          ciclo_id: string
+          criado_em: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada: string | null
+          data_recomendacao: string
+          fazenda_id: string
+          finalidade: string
+          hectares_realizados: number | null
+          hectares_sugeridos: number
+          id: string
+          observacoes: string | null
+          profundidade_incorporacao_cm: number | null
+        }
+        Insert: {
+          ciclo_id: string
+          criado_em?: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada?: string | null
+          data_recomendacao?: string
+          fazenda_id: string
+          finalidade?: string
+          hectares_realizados?: number | null
+          hectares_sugeridos: number
+          id?: string
+          observacoes?: string | null
+          profundidade_incorporacao_cm?: number | null
+        }
+        Update: {
+          ciclo_id?: string
+          criado_em?: string
+          criado_por_perfil_id?: string
+          data_aplicacao_indicada?: string
+          data_aplicacao_realizada?: string | null
+          data_recomendacao?: string
+          fazenda_id?: string
+          finalidade?: string
+          hectares_realizados?: number | null
+          hectares_sugeridos?: number
+          id?: string
+          observacoes?: string | null
+          profundidade_incorporacao_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_corretivo_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "ciclos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_corretivo_criado_por_perfil_id_fkey"
+            columns: ["criado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_corretivo_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_corretivo_produtos: {
+        Row: {
+          dose_ton_ha: number
+          id: string
+          insumo_id: string
+          prnt_pct: number | null
+          recomendacao_id: string
+        }
+        Insert: {
+          dose_ton_ha: number
+          id?: string
+          insumo_id: string
+          prnt_pct?: number | null
+          recomendacao_id: string
+        }
+        Update: {
+          dose_ton_ha?: number
+          id?: string
+          insumo_id?: string
+          prnt_pct?: number | null
+          recomendacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_corretivo_produtos_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_corretivo_produtos_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_corretivo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_corretivo_talhoes: {
+        Row: {
+          area_ha: number
+          id: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Insert: {
+          area_ha: number
+          id?: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Update: {
+          area_ha?: number
+          id?: string
+          recomendacao_id?: string
+          talhao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_corretivo_talhoes_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_corretivo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_corretivo_talhoes_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_plantio: {
+        Row: {
+          ciclo_id: string
+          criado_em: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada: string | null
+          data_colheita_prevista: string | null
+          data_recomendacao: string
+          espacamento_entrelinhas_cm: number | null
+          fazenda_id: string
+          hectares_realizados: number | null
+          hectares_sugeridos: number
+          id: string
+          observacoes: string | null
+          populacao_plantas_ha: number | null
+          profundidade_semeadura_cm: number | null
+          velocidade_plantio_kmh: number | null
+        }
+        Insert: {
+          ciclo_id: string
+          criado_em?: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada?: string | null
+          data_colheita_prevista?: string | null
+          data_recomendacao?: string
+          espacamento_entrelinhas_cm?: number | null
+          fazenda_id: string
+          hectares_realizados?: number | null
+          hectares_sugeridos: number
+          id?: string
+          observacoes?: string | null
+          populacao_plantas_ha?: number | null
+          profundidade_semeadura_cm?: number | null
+          velocidade_plantio_kmh?: number | null
+        }
+        Update: {
+          ciclo_id?: string
+          criado_em?: string
+          criado_por_perfil_id?: string
+          data_aplicacao_indicada?: string
+          data_aplicacao_realizada?: string | null
+          data_colheita_prevista?: string | null
+          data_recomendacao?: string
+          espacamento_entrelinhas_cm?: number | null
+          fazenda_id?: string
+          hectares_realizados?: number | null
+          hectares_sugeridos?: number
+          id?: string
+          observacoes?: string | null
+          populacao_plantas_ha?: number | null
+          profundidade_semeadura_cm?: number | null
+          velocidade_plantio_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_plantio_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "ciclos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_plantio_criado_por_perfil_id_fkey"
+            columns: ["criado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_plantio_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_plantio_produtos: {
+        Row: {
+          dose_por_ha: number
+          id: string
+          insumo_id: string
+          lote: string | null
+          recomendacao_id: string
+          unidade_dose: string
+        }
+        Insert: {
+          dose_por_ha: number
+          id?: string
+          insumo_id: string
+          lote?: string | null
+          recomendacao_id: string
+          unidade_dose: string
+        }
+        Update: {
+          dose_por_ha?: number
+          id?: string
+          insumo_id?: string
+          lote?: string | null
+          recomendacao_id?: string
+          unidade_dose?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_plantio_produtos_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_plantio_produtos_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_plantio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_plantio_talhoes: {
+        Row: {
+          area_ha: number
+          id: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Insert: {
+          area_ha: number
+          id?: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Update: {
+          area_ha?: number
+          id?: string
+          recomendacao_id?: string
+          talhao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_plantio_talhoes_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_plantio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_plantio_talhoes_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_pulverizacao: {
+        Row: {
+          ciclo_id: string
+          classificacao_gota: string
+          criado_em: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada: string | null
+          data_recomendacao: string
+          fazenda_id: string
+          hectares_realizados: number | null
+          hectares_sugeridos: number
+          id: string
+          observacoes: string | null
+          pressao_bar: number
+          temperatura_max_c: number | null
+          temperatura_min_c: number | null
+          tipo_bico: string
+          umidade_relativa_min_pct: number | null
+          vento_max_kmh: number | null
+          vento_min_kmh: number | null
+          volume_calda_l_ha: number
+        }
+        Insert: {
+          ciclo_id: string
+          classificacao_gota: string
+          criado_em?: string
+          criado_por_perfil_id: string
+          data_aplicacao_indicada: string
+          data_aplicacao_realizada?: string | null
+          data_recomendacao?: string
+          fazenda_id: string
+          hectares_realizados?: number | null
+          hectares_sugeridos: number
+          id?: string
+          observacoes?: string | null
+          pressao_bar: number
+          temperatura_max_c?: number | null
+          temperatura_min_c?: number | null
+          tipo_bico: string
+          umidade_relativa_min_pct?: number | null
+          vento_max_kmh?: number | null
+          vento_min_kmh?: number | null
+          volume_calda_l_ha: number
+        }
+        Update: {
+          ciclo_id?: string
+          classificacao_gota?: string
+          criado_em?: string
+          criado_por_perfil_id?: string
+          data_aplicacao_indicada?: string
+          data_aplicacao_realizada?: string | null
+          data_recomendacao?: string
+          fazenda_id?: string
+          hectares_realizados?: number | null
+          hectares_sugeridos?: number
+          id?: string
+          observacoes?: string | null
+          pressao_bar?: number
+          temperatura_max_c?: number | null
+          temperatura_min_c?: number | null
+          tipo_bico?: string
+          umidade_relativa_min_pct?: number | null
+          vento_max_kmh?: number | null
+          vento_min_kmh?: number | null
+          volume_calda_l_ha?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_ciclo_id_fkey"
+            columns: ["ciclo_id"]
+            isOneToOne: false
+            referencedRelation: "ciclos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_criado_por_perfil_id_fkey"
+            columns: ["criado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_pulverizacao_produtos: {
+        Row: {
+          dose_por_ha: number
+          id: string
+          insumo_id: string
+          ordem_mistura: number | null
+          recomendacao_id: string
+          unidade_dose: string
+        }
+        Insert: {
+          dose_por_ha: number
+          id?: string
+          insumo_id: string
+          ordem_mistura?: number | null
+          recomendacao_id: string
+          unidade_dose: string
+        }
+        Update: {
+          dose_por_ha?: number
+          id?: string
+          insumo_id?: string
+          ordem_mistura?: number | null
+          recomendacao_id?: string
+          unidade_dose?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_produtos_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_produtos_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_pulverizacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacoes_pulverizacao_talhoes: {
+        Row: {
+          area_ha: number
+          id: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Insert: {
+          area_ha: number
+          id?: string
+          recomendacao_id: string
+          talhao_id: string
+        }
+        Update: {
+          area_ha?: number
+          id?: string
+          recomendacao_id?: string
+          talhao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_talhoes_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_pulverizacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomendacoes_pulverizacao_talhoes_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
             referencedColumns: ["id"]
           },
         ]
@@ -14278,6 +15145,8 @@ export type Database = {
       }
       romaneios_entrada: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por_perfil_id: string | null
           ardidos_pct: number | null
           avariados_padrao_pct: number | null
           avariados_pct: number | null
@@ -14303,10 +15172,13 @@ export type Database = {
           impureza_padrao_pct: number | null
           impureza_pct: number | null
           insumo_id: string | null
+          lancado_por_perfil_id: string | null
           modo_pesagem: string | null
           mofados_pct: number | null
+          motivo_rejeicao: string | null
           motorista: string | null
           obs: string | null
+          origem_lancamento: string
           outros_avariados_pct: number | null
           peso_bruto_kg: number
           peso_classificado_kg: number | null
@@ -14319,6 +15191,7 @@ export type Database = {
           quebrados_pct: number | null
           sacas: number | null
           status: string
+          status_campo: string
           talhao_id: string | null
           tara_kg: number
           ticket_numero: string | null
@@ -14328,6 +15201,8 @@ export type Database = {
           umidade_pct: number | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           ardidos_pct?: number | null
           avariados_padrao_pct?: number | null
           avariados_pct?: number | null
@@ -14353,10 +15228,13 @@ export type Database = {
           impureza_padrao_pct?: number | null
           impureza_pct?: number | null
           insumo_id?: string | null
+          lancado_por_perfil_id?: string | null
           modo_pesagem?: string | null
           mofados_pct?: number | null
+          motivo_rejeicao?: string | null
           motorista?: string | null
           obs?: string | null
+          origem_lancamento?: string
           outros_avariados_pct?: number | null
           peso_bruto_kg?: number
           peso_classificado_kg?: number | null
@@ -14369,6 +15247,7 @@ export type Database = {
           quebrados_pct?: number | null
           sacas?: number | null
           status?: string
+          status_campo?: string
           talhao_id?: string | null
           tara_kg?: number
           ticket_numero?: string | null
@@ -14378,6 +15257,8 @@ export type Database = {
           umidade_pct?: number | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por_perfil_id?: string | null
           ardidos_pct?: number | null
           avariados_padrao_pct?: number | null
           avariados_pct?: number | null
@@ -14403,10 +15284,13 @@ export type Database = {
           impureza_padrao_pct?: number | null
           impureza_pct?: number | null
           insumo_id?: string | null
+          lancado_por_perfil_id?: string | null
           modo_pesagem?: string | null
           mofados_pct?: number | null
+          motivo_rejeicao?: string | null
           motorista?: string | null
           obs?: string | null
+          origem_lancamento?: string
           outros_avariados_pct?: number | null
           peso_bruto_kg?: number
           peso_classificado_kg?: number | null
@@ -14419,6 +15303,7 @@ export type Database = {
           quebrados_pct?: number | null
           sacas?: number | null
           status?: string
+          status_campo?: string
           talhao_id?: string | null
           tara_kg?: number
           ticket_numero?: string | null
@@ -14428,6 +15313,13 @@ export type Database = {
           umidade_pct?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "romaneios_entrada_aprovado_por_perfil_id_fkey"
+            columns: ["aprovado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "romaneios_entrada_ciclo_id_fkey"
             columns: ["ciclo_id"]
@@ -14468,6 +15360,13 @@ export type Database = {
             columns: ["insumo_id"]
             isOneToOne: false
             referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "romaneios_entrada_lancado_por_perfil_id_fkey"
+            columns: ["lancado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
           {
@@ -15123,6 +16022,144 @@ export type Database = {
           },
         ]
       }
+      tarefas: {
+        Row: {
+          concluida_em: string | null
+          criado_em: string
+          fazenda_id: string
+          id: string
+          perfil_atribuido_id: string
+          recomendacao_adubacao_id: string | null
+          recomendacao_corretivo_id: string | null
+          recomendacao_plantio_id: string | null
+          recomendacao_pulverizacao_id: string | null
+          status: string
+        }
+        Insert: {
+          concluida_em?: string | null
+          criado_em?: string
+          fazenda_id: string
+          id?: string
+          perfil_atribuido_id: string
+          recomendacao_adubacao_id?: string | null
+          recomendacao_corretivo_id?: string | null
+          recomendacao_plantio_id?: string | null
+          recomendacao_pulverizacao_id?: string | null
+          status?: string
+        }
+        Update: {
+          concluida_em?: string | null
+          criado_em?: string
+          fazenda_id?: string
+          id?: string
+          perfil_atribuido_id?: string
+          recomendacao_adubacao_id?: string | null
+          recomendacao_corretivo_id?: string | null
+          recomendacao_plantio_id?: string | null
+          recomendacao_pulverizacao_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_perfil_atribuido_id_fkey"
+            columns: ["perfil_atribuido_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_recomendacao_adubacao_id_fkey"
+            columns: ["recomendacao_adubacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_adubacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_recomendacao_corretivo_id_fkey"
+            columns: ["recomendacao_corretivo_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_corretivo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_recomendacao_plantio_id_fkey"
+            columns: ["recomendacao_plantio_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_plantio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_recomendacao_pulverizacao_id_fkey"
+            columns: ["recomendacao_pulverizacao_id"]
+            isOneToOne: false
+            referencedRelation: "recomendacoes_pulverizacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tarefas_transferencias: {
+        Row: {
+          autorizado_por_perfil_id: string
+          id: string
+          perfil_destino_id: string
+          perfil_origem_id: string
+          tarefa_id: string
+          transferido_em: string
+        }
+        Insert: {
+          autorizado_por_perfil_id: string
+          id?: string
+          perfil_destino_id: string
+          perfil_origem_id: string
+          tarefa_id: string
+          transferido_em?: string
+        }
+        Update: {
+          autorizado_por_perfil_id?: string
+          id?: string
+          perfil_destino_id?: string
+          perfil_origem_id?: string
+          tarefa_id?: string
+          transferido_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_transferencias_autorizado_por_perfil_id_fkey"
+            columns: ["autorizado_por_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_transferencias_perfil_destino_id_fkey"
+            columns: ["perfil_destino_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_transferencias_perfil_origem_id_fkey"
+            columns: ["perfil_origem_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_transferencias_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       taxas_bancarias: {
         Row: {
           competencia: string | null
@@ -15269,6 +16306,8 @@ export type Database = {
       transferencias_estoque: {
         Row: {
           cfop: string
+          cpf_cnpj_destino: string | null
+          cpf_cnpj_origem: string | null
           created_at: string | null
           created_by: string | null
           data_emissao: string | null
@@ -15287,7 +16326,9 @@ export type Database = {
           nf_chave: string | null
           nf_destino_chave: string | null
           nf_destino_numero: string | null
+          nf_modulo_key: string | null
           nf_numero: string | null
+          nf_protocolo: string | null
           numero: string | null
           observacao: string | null
           solicitante_nome: string | null
@@ -15299,6 +16340,8 @@ export type Database = {
         }
         Insert: {
           cfop?: string
+          cpf_cnpj_destino?: string | null
+          cpf_cnpj_origem?: string | null
           created_at?: string | null
           created_by?: string | null
           data_emissao?: string | null
@@ -15317,7 +16360,9 @@ export type Database = {
           nf_chave?: string | null
           nf_destino_chave?: string | null
           nf_destino_numero?: string | null
+          nf_modulo_key?: string | null
           nf_numero?: string | null
+          nf_protocolo?: string | null
           numero?: string | null
           observacao?: string | null
           solicitante_nome?: string | null
@@ -15329,6 +16374,8 @@ export type Database = {
         }
         Update: {
           cfop?: string
+          cpf_cnpj_destino?: string | null
+          cpf_cnpj_origem?: string | null
           created_at?: string | null
           created_by?: string | null
           data_emissao?: string | null
@@ -15347,7 +16394,9 @@ export type Database = {
           nf_chave?: string | null
           nf_destino_chave?: string | null
           nf_destino_numero?: string | null
+          nf_modulo_key?: string | null
           nf_numero?: string | null
+          nf_protocolo?: string | null
           numero?: string | null
           observacao?: string | null
           solicitante_nome?: string | null
@@ -16024,9 +17073,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      saldo_insumo_deposito: {
+        Row: {
+          deposito_id: string | null
+          fazenda_id: string | null
+          insumo_id: string | null
+          saldo: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_deposito_id_fkey"
+            columns: ["deposito_id"]
+            isOneToOne: false
+            referencedRelation: "depositos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      fn_pode_acessar_fazenda_campo: {
+        Args: { p_fazenda_id: string }
+        Returns: boolean
+      }
       set_talhao_area_plantada: {
         Args: { p_area: number; p_id: string }
         Returns: undefined

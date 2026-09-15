@@ -71,23 +71,22 @@ export default function TarefasPage() {
     if (!auth.perfilId) return;
 
     async function carregar(perfilId: string) {
-      const sb = supabase as unknown as {
-        from: (table: string) => ReturnType<typeof supabase.from>;
-      };
-
-      const { data, error } = await sb
+      const { data, error } = await supabase
         .from("tarefas")
         .select(
           "id, fazenda_id, status, criado_em, recomendacao_pulverizacao_id, recomendacao_adubacao_id, recomendacao_corretivo_id, recomendacao_plantio_id"
         )
         .eq("perfil_atribuido_id", perfilId)
         .in("status", ["pendente", "em_andamento"])
-        .order("criado_em", { ascending: true });
+        .order("criado_em", { ascending: true })
+        // Limite explícito (não confiar no cap implícito de 1.000 linhas do
+        // Supabase — CLAUDE.md 2.7). Uma fila pessoal de tarefas pendentes
+        // não deveria chegar perto disso; se chegar, algo já está errado
+        // antes da paginação.
+        .limit(500);
 
       if (error) {
-        setErro(
-          `Não foi possível carregar as tarefas: ${error.message}. Provavelmente o schema ainda não foi aplicado (db/migrations-draft/003_tarefas.sql).`
-        );
+        setErro(`Não foi possível carregar as tarefas: ${error.message}.`);
         setCarregando(false);
         return;
       }
@@ -126,25 +125,31 @@ export default function TarefasPage() {
 
       const resumosPorId = new Map<string, Resumo>();
 
-      await Promise.all(
-        (Object.keys(idsPorTipo) as TipoTarefa[]).map(async (tipo) => {
-          const ids = idsPorTipo[tipo];
-          if (ids.length === 0) return;
-          const { data: recs } = await sb
-            .from(tabelaPorTipo[tipo])
-            .select("id, data_aplicacao_indicada, hectares_sugeridos")
-            .in("id", ids);
-          ((recs ?? []) as unknown as (Resumo & { id: string })[]).forEach((r) => {
-            resumosPorId.set(r.id, { data_aplicacao_indicada: r.data_aplicacao_indicada, hectares_sugeridos: r.hectares_sugeridos });
-          });
-        })
-      );
+      // Tabela de origem varia por tipo — só conhecida em runtime, por isso
+      // o cast: supabase-js exige união literal do schema gerado, incompatível
+      // com uma função só que serve os 4 tipos de recomendação.
+      const sb = supabase as unknown as {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        from: (table: string) => any;
+      };
 
-      const { data: fazendasData } = await supabase
-        .from("fazendas")
-        .select("id, nome")
-        .in("id", Array.from(fazendaIds));
-      const nomeFazendaPorId = new Map((fazendasData ?? []).map((f) => [f.id, f.nome]));
+      const [, fazendasRes] = await Promise.all([
+        Promise.all(
+          (Object.keys(idsPorTipo) as TipoTarefa[]).map(async (tipo) => {
+            const ids = idsPorTipo[tipo];
+            if (ids.length === 0) return;
+            const { data: recs } = await sb
+              .from(tabelaPorTipo[tipo])
+              .select("id, data_aplicacao_indicada, hectares_sugeridos")
+              .in("id", ids);
+            ((recs ?? []) as unknown as (Resumo & { id: string })[]).forEach((r) => {
+              resumosPorId.set(r.id, { data_aplicacao_indicada: r.data_aplicacao_indicada, hectares_sugeridos: r.hectares_sugeridos });
+            });
+          })
+        ),
+        supabase.from("fazendas").select("id, nome").in("id", Array.from(fazendaIds)),
+      ]);
+      const nomeFazendaPorId = new Map((fazendasRes.data ?? []).map((f) => [f.id, f.nome]));
 
       const exibicao: TarefaExibicao[] = linhas
         .map((t) => {

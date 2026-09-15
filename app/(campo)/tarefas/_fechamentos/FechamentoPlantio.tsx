@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../recomendacoes/_shared/styles";
 import { SucessoConclusao } from "./SucessoConclusao";
+import { enfileirarEExecutar } from "@/lib/offline-store";
+import { executarFechamentoPlantio, type PayloadFechamentoPlantio } from "@/lib/tarefas/executores";
 
 type RecomendacaoPlantio = {
   id: string;
@@ -46,19 +48,18 @@ export function FechamentoPlantio({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+  const [pendenteSync, setPendenteSync] = useState(false);
 
   useEffect(() => {
     async function carregar() {
-      const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-
       const [{ data: recData, error: recError }, { data: talhoesData }, { data: produtosData }] = await Promise.all([
-        sb
+        supabase
           .from("recomendacoes_plantio")
           .select("id, ciclo_id, data_aplicacao_indicada, hectares_sugeridos, populacao_plantas_ha, espacamento_entrelinhas_cm, profundidade_semeadura_cm")
           .eq("id", recomendacaoId)
           .limit(1),
-        sb.from("recomendacoes_plantio_talhoes").select("talhao_id, area_ha, talhoes(nome)").eq("recomendacao_id", recomendacaoId),
-        sb.from("recomendacoes_plantio_produtos").select("insumo_id, dose_por_ha, unidade_dose, lote, insumos(nome)").eq("recomendacao_id", recomendacaoId),
+        supabase.from("recomendacoes_plantio_talhoes").select("talhao_id, area_ha, talhoes(nome)").eq("recomendacao_id", recomendacaoId),
+        supabase.from("recomendacoes_plantio_produtos").select("insumo_id, dose_por_ha, unidade_dose, lote, insumos(nome)").eq("recomendacao_id", recomendacaoId),
       ]);
 
       if (recError || !recData || recData.length === 0) {
@@ -118,46 +119,44 @@ export function FechamentoPlantio({
     }
 
     setSalvando(true);
-    const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-    const talhaoUnico = talhoes.length === 1 ? talhoes[0].talhao_id : null;
 
-    // `plantios` só aceita 1 insumo por linha (sem tabela de itens, ao
-    // contrário de pulverização/adubação/corretivo) — por isso 1 linha por
-    // produto da recomendação (normalmente semente + inoculante).
-    // `dose_kg_ha` da tabela real só faz sentido pra dose em kg; quando a
-    // unidade é outra (ex.: mL/ha do inoculante), a dose vai só na
-    // observação, porque não existe coluna própria pra isso na tabela real.
-    const linhas = produtos.map((p) => ({
-      id: crypto.randomUUID(),
-      fazenda_id: fazendaId,
-      ciclo_id: recomendacao.ciclo_id,
-      talhao_id: talhaoUnico,
-      data_plantio: dataRealizada,
-      area_ha: Number(hectaresRealizados),
-      variedade: p.nome,
-      lote_semente: p.lote || null,
-      dose_kg_ha: p.unidade_dose === "kg" ? p.dose_por_ha : null,
-      observacao:
-        p.unidade_dose === "kg"
-          ? observacoesReais || null
-          : `Dose: ${p.dose_por_ha} ${p.unidade_dose}/ha${observacoesReais ? ` — ${observacoesReais}` : ""}`,
-      status_campo: "pendente",
-      origem_lancamento: "app_campo",
-      lancado_por_perfil_id: auth.perfilId,
+    // `plantios` só aceita 1 insumo E 1 talhão por linha — ver
+    // lib/tarefas/executores.ts pra como isso vira uma linha por
+    // combinação talhão × produto. Ids gerados aqui, uma vez só.
+    const fatorEscala = talhoes.length > 0 ? Number(hectaresRealizados) / recomendacao.hectares_sugeridos : 1;
+    const linhas = talhoes.map((t) => ({
+      execucaoId: crypto.randomUUID(),
+      talhaoId: t.talhao_id,
+      areaHa: Math.round(t.area_ha * fatorEscala * 100) / 100,
+      itens: produtos.map((p) => ({
+        id: crypto.randomUUID(),
+        insumoId: p.insumo_id,
+        nome: p.nome,
+        dose: p.dose_por_ha,
+        unidade: p.unidade_dose,
+        lote: p.lote,
+      })),
     }));
 
-    const { error: insertError } = await supabase.from("plantios").insert(linhas as never);
+    const payload: PayloadFechamentoPlantio = {
+      fazendaId,
+      cicloId: recomendacao.ciclo_id,
+      tarefaId,
+      recomendacaoId: recomendacao.id,
+      perfilId: auth.perfilId,
+      linhas,
+      dataRealizada,
+      hectaresRealizados: Number(hectaresRealizados),
+      observacoes: observacoesReais || null,
+    };
 
-    if (insertError) {
-      setErro(`Não foi possível salvar: ${insertError.message}. Provavelmente o schema ainda não foi aplicado (006).`);
-      setSalvando(false);
-      return;
-    }
-
-    await sb.from("recomendacoes_plantio").update({ hectares_realizados: Number(hectaresRealizados), data_aplicacao_realizada: dataRealizada }).eq("id", recomendacao.id);
-    await sb.from("tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", tarefaId);
+    const resultado = await enfileirarEExecutar(
+      { id: crypto.randomUUID(), tipo: "fechamento_plantio", fazenda_id: fazendaId, payload },
+      () => executarFechamentoPlantio(supabase, payload)
+    );
 
     setSalvando(false);
+    setPendenteSync(!resultado.sincronizado);
     setSucesso(true);
   }
 
@@ -175,7 +174,7 @@ export function FechamentoPlantio({
       </main>
     );
   }
-  if (sucesso) return <SucessoConclusao onVoltar={() => router.push("/tarefas")} />;
+  if (sucesso) return <SucessoConclusao pendenteSync={pendenteSync} onVoltar={() => router.push("/tarefas")} />;
 
   return (
     <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>

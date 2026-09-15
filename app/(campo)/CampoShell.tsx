@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SyncButton } from "@/components/SyncButton";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 const NAV_ITEMS = [
   { href: "/", label: "Início", icone: "🏠" },
@@ -14,8 +15,60 @@ const NAV_ITEMS = [
   { href: "/recomendacoes/corretivo/nova", label: "Corretivo", icone: "⚗️" },
 ] as const;
 
+// Só aparece pra quem pode aprovar — mantém a barra enxuta pra
+// Operador/Apontador, que nunca usam essa tela.
+const NAV_ITEM_APROVACOES = { href: "/aprovacoes", label: "Aprovar", icone: "✅" } as const;
+
 export function CampoShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const auth = useAuth();
+
+  if (auth.carregando) {
+    return (
+      <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ fontSize: 13, color: "var(--azul-petroleo)" }}>Carregando...</p>
+      </main>
+    );
+  }
+
+  if (auth.erro || auth.semAcesso) {
+    return (
+      <main
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+          padding: 24,
+          textAlign: "center",
+        }}
+      >
+        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
+          {auth.semAcesso ? "Sem acesso" : "Não foi possível continuar"}
+        </p>
+        <p style={{ fontSize: 13, color: "var(--vermelho)" }}>{auth.motivoSemAcesso ?? auth.erro}</p>
+        <button
+          onClick={auth.signOut}
+          style={{
+            height: 46,
+            padding: "0 24px",
+            borderRadius: 8,
+            border: "none",
+            background: "var(--azul-petroleo)",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          Sair
+        </button>
+      </main>
+    );
+  }
+
+  const itensNav = auth.ehGerenteCampo ? [...NAV_ITEMS, NAV_ITEM_APROVACOES] : NAV_ITEMS;
 
   return (
     <>
@@ -36,7 +89,7 @@ export function CampoShell({ children }: { children: React.ReactNode }) {
           zIndex: 50,
         }}
       >
-        {NAV_ITEMS.map((item) => {
+        {itensNav.map((item) => {
           const ativo = item.href === "/" ? path === "/" : path.startsWith(item.href.split("/nova")[0]);
           return (
             <Link

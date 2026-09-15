@@ -31,6 +31,29 @@ export default async function HomePage() {
       <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <p style={{ fontSize: 11, fontWeight: 600, color: "var(--azul-petroleo)" }}>
+            APROVAÇÕES
+          </p>
+          <Link
+            href="/aprovacoes"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "16px",
+              borderRadius: 12,
+              border: "0.5px solid var(--azul-petroleo)",
+              background: "#fff",
+            }}
+          >
+            <span style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
+              Lançamentos pendentes
+            </span>
+            <span style={{ color: "var(--mostarda)", fontSize: 18 }}>›</span>
+          </Link>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--azul-petroleo)" }}>
             TAREFAS
           </p>
           <Link

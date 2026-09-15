@@ -1,11 +1,21 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../recomendacoes/_shared/styles";
 import { TalhaoMapaKml } from "../_shared/TalhaoMapaKml";
 import { CATALOGO, NIVEIS, referenciaNe, type TipoOcorrencia } from "@/lib/monitoramento/catalogo";
+import { enfileirarEExecutar } from "@/lib/offline-store";
+import { executarMonitoramento, type PayloadMonitoramento } from "@/lib/monitoramento/executor";
+import {
+  criarRefFotoLocal,
+  ehFotoLocal,
+  idDaRefFotoLocal,
+  lerFotoLocal,
+  removerFotoLocal,
+  salvarFotoLocal,
+} from "@/lib/offline-photos";
 
 const TIPOS: { value: TipoOcorrencia; label: string; icone: string }[] = [
   { value: "praga", label: "Praga", icone: "🐛" },
@@ -17,6 +27,7 @@ export default function NovoMonitoramentoPage() {
   const router = useRouter();
   const {
     supabase,
+    userId,
     fazendas,
     fazendaId,
     setFazendaId,
@@ -46,11 +57,41 @@ export default function NovoMonitoramentoPage() {
 
   const [fotos, setFotos] = useState<string[]>([]);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [previewsLocais, setPreviewsLocais] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fotos salvas offline (referência "local:<id>") não têm URL pública ainda
+  // — resolve o blob do IndexedDB pra uma object URL só pra exibir a prévia
+  // na tela. Libera as object URLs antigas ao trocar a lista de fotos.
+  useEffect(() => {
+    const refsLocais = fotos.filter(ehFotoLocal);
+    if (refsLocais.length === 0) return;
+
+    let cancelado = false;
+    const criadas: string[] = [];
+
+    (async () => {
+      const novos: Record<string, string> = {};
+      for (const ref of refsLocais) {
+        const blob = await lerFotoLocal(idDaRefFotoLocal(ref));
+        if (!blob) continue;
+        const url = URL.createObjectURL(blob);
+        novos[ref] = url;
+        criadas.push(url);
+      }
+      if (!cancelado) setPreviewsLocais((atual) => ({ ...atual, ...novos }));
+    })();
+
+    return () => {
+      cancelado = true;
+      criadas.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [fotos]);
 
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+  const [pendenteSync, setPendenteSync] = useState(false);
 
   const dataHoje = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const talhaoSelecionado = talhoes.find((t) => t.id === talhaoId) ?? null;
@@ -84,6 +125,16 @@ export default function NovoMonitoramentoPage() {
     if (fotos.length >= 3 || !fazendaId) return;
     setEnviandoFoto(true);
     setErro(null);
+
+    // Sem conexão: nem tenta o upload, já salva local — a resolução pra URL
+    // real acontece depois, no sync (ver lib/monitoramento/executor.ts).
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const id = await salvarFotoLocal(file);
+      setFotos((atual) => [...atual, criarRefFotoLocal(id)]);
+      setEnviandoFoto(false);
+      return;
+    }
+
     const ext = file.name.split(".").pop() ?? "jpg";
     const path = `monitoramento/${fazendaId}/${Date.now()}.${ext}`;
     try {
@@ -95,8 +146,11 @@ export default function NovoMonitoramentoPage() {
         data: { publicUrl },
       } = supabase.storage.from("arquivos").getPublicUrl(up.path);
       setFotos((atual) => [...atual, publicUrl]);
-    } catch (e) {
-      setErro(`Falha ao enviar foto: ${(e as Error).message}`);
+    } catch {
+      // Upload falhou apesar de "online" (rede instável) — não bloqueia o
+      // operador, guarda local e sincroniza depois junto com o resto.
+      const id = await salvarFotoLocal(file);
+      setFotos((atual) => [...atual, criarRefFotoLocal(id)]);
     }
     setEnviandoFoto(false);
   }
@@ -116,38 +170,34 @@ export default function NovoMonitoramentoPage() {
 
     setSalvando(true);
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    const { error: insertError } = await supabase.from("monitoramento_pragas").insert({
-      fazenda_id: fazendaId,
-      talhao_id: talhaoId,
-      ciclo_id: cicloId || null,
+    const id = crypto.randomUUID();
+    const payload: PayloadMonitoramento = {
+      id,
+      fazendaId,
+      talhaoId,
+      cicloId: cicloId || null,
       data: dataHoje,
-      data_monitoramento: dataHoje,
       tipo,
       nome: nomeFinal,
       nivel,
-      percentual_plantas: percentualPlantas ? Number(percentualPlantas) : null,
+      percentualPlantas: percentualPlantas ? Number(percentualPlantas) : null,
       estagio: estagio || null,
-      estagio_cultura: estagio || null,
-      acao_recomendada: acaoRecomendada || null,
+      acaoRecomendada: acaoRecomendada || null,
       observacoes: observacoes || null,
-      gps_lat: gpsLat,
-      gps_lng: gpsLng,
-      gps_accuracy_m: gpsAccuracy,
-      foto_url: fotos[0] ?? null,
-      foto_url_2: fotos[1] ?? null,
-      foto_url_3: fotos[2] ?? null,
-      usuario_id: userData?.user?.id ?? null,
-    });
+      gpsLat,
+      gpsLng,
+      gpsAccuracy,
+      fotos,
+      usuarioId: userId,
+    };
 
-    if (insertError) {
-      setErro(`Não foi possível salvar: ${insertError.message}`);
-      setSalvando(false);
-      return;
-    }
+    const resultado = await enfileirarEExecutar(
+      { id, tipo: "monitoramento", fazenda_id: fazendaId, payload },
+      () => executarMonitoramento(supabase, payload)
+    );
 
     setSalvando(false);
+    setPendenteSync(!resultado.sincronizado);
     setSucesso(true);
   }
 
@@ -200,6 +250,11 @@ export default function NovoMonitoramentoPage() {
         <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
           Monitoramento registrado.
         </p>
+        {pendenteSync && (
+          <p style={{ fontSize: 12, color: "var(--mostarda)", fontWeight: 600 }}>
+            📡 Salvo no aparelho — vai sincronizar assim que a conexão voltar.
+          </p>
+        )}
 
         {mostrarCta && (
           <div
@@ -475,17 +530,37 @@ export default function NovoMonitoramentoPage() {
           <p style={sectionTitleStyle}>Fotos</p>
           {fotos.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-              {fotos.map((url, i) => (
-                <div key={url} style={{ position: "relative" }}>
+              {fotos.map((ref, i) => (
+                <div key={ref} style={{ position: "relative" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={url}
+                    src={ehFotoLocal(ref) ? previewsLocais[ref] : ref}
                     alt={`Foto ${i + 1}`}
-                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8 }}
+                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8, background: "#EAF0F6" }}
                   />
+                  {ehFotoLocal(ref) && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        bottom: 4,
+                        left: 4,
+                        fontSize: 9,
+                        fontWeight: 600,
+                        color: "#fff",
+                        background: "rgba(11,45,80,0.75)",
+                        padding: "2px 5px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      📡 offline
+                    </span>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setFotos((atual) => atual.filter((_, j) => j !== i))}
+                    onClick={() => {
+                      if (ehFotoLocal(ref)) removerFotoLocal(idDaRefFotoLocal(ref));
+                      setFotos((atual) => atual.filter((_, j) => j !== i));
+                    }}
                     style={{
                       position: "absolute",
                       top: 4,

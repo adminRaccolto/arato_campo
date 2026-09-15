@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../recomendacoes/_shared/styles";
 import { SucessoConclusao } from "./SucessoConclusao";
+import { enfileirarEExecutar } from "@/lib/offline-store";
+import { executarFechamentoCorretivo, type PayloadFechamentoCorretivo } from "@/lib/tarefas/executores";
 
 type RecomendacaoCorretivo = {
   id: string;
@@ -45,19 +47,18 @@ export function FechamentoCorretivo({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+  const [pendenteSync, setPendenteSync] = useState(false);
 
   useEffect(() => {
     async function carregar() {
-      const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-
       const [{ data: recData, error: recError }, { data: talhoesData }, { data: produtosData }] = await Promise.all([
-        sb
+        supabase
           .from("recomendacoes_corretivo")
           .select("id, ciclo_id, data_aplicacao_indicada, hectares_sugeridos, finalidade, profundidade_incorporacao_cm")
           .eq("id", recomendacaoId)
           .limit(1),
-        sb.from("recomendacoes_corretivo_talhoes").select("talhao_id, area_ha, talhoes(nome)").eq("recomendacao_id", recomendacaoId),
-        sb.from("recomendacoes_corretivo_produtos").select("insumo_id, dose_ton_ha, prnt_pct, insumos(nome)").eq("recomendacao_id", recomendacaoId),
+        supabase.from("recomendacoes_corretivo_talhoes").select("talhao_id, area_ha, talhoes(nome)").eq("recomendacao_id", recomendacaoId),
+        supabase.from("recomendacoes_corretivo_produtos").select("insumo_id, dose_ton_ha, prnt_pct, insumos(nome)").eq("recomendacao_id", recomendacaoId),
       ]);
 
       if (recError || !recData || recData.length === 0) {
@@ -106,47 +107,43 @@ export function FechamentoCorretivo({
     }
 
     setSalvando(true);
-    const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-    const correcaoId = crypto.randomUUID();
-    const talhaoUnico = talhoes.length === 1 ? talhoes[0].talhao_id : null;
 
-    const { error: insertError } = await supabase.from("correcoes_solo").insert({
-      id: correcaoId,
-      fazenda_id: fazendaId,
-      ciclo_id: recomendacao.ciclo_id,
-      talhao_id: talhaoUnico,
-      data_aplicacao: dataRealizada,
-      area_ha: Number(hectaresRealizados),
+    // Uma linha de execução por talhão do plano — ver mesmo raciocínio em
+    // FechamentoPulverizacao (id gerado aqui uma vez só, nunca regerado num
+    // retry).
+    const fatorEscala = talhoes.length > 0 ? Number(hectaresRealizados) / recomendacao.hectares_sugeridos : 1;
+    const linhas = talhoes.map((t) => ({
+      execucaoId: crypto.randomUUID(),
+      talhaoId: t.talhao_id,
+      areaHa: Math.round(t.area_ha * fatorEscala * 100) / 100,
+      itens: produtos.map((p) => ({
+        id: crypto.randomUUID(),
+        insumoId: p.insumo_id,
+        nome: p.nome,
+        dose: p.dose_ton_ha,
+      })),
+    }));
+
+    const payload: PayloadFechamentoCorretivo = {
+      fazendaId,
+      cicloId: recomendacao.ciclo_id,
+      tarefaId,
+      recomendacaoId: recomendacao.id,
+      perfilId: auth.perfilId,
+      linhas,
+      dataRealizada,
+      hectaresRealizados: Number(hectaresRealizados),
+      observacoes: observacoesReais || null,
       finalidade: recomendacao.finalidade,
-      observacao: observacoesReais || null,
-      status_campo: "pendente",
-      origem_lancamento: "app_campo",
-      lancado_por_perfil_id: auth.perfilId,
-    } as never);
+    };
 
-    if (insertError) {
-      setErro(`Não foi possível salvar: ${insertError.message}. Provavelmente o schema ainda não foi aplicado (006).`);
-      setSalvando(false);
-      return;
-    }
-
-    if (produtos.length > 0) {
-      await supabase.from("correcoes_solo_itens").insert(
-        produtos.map((p) => ({
-          id: crypto.randomUUID(),
-          correcao_id: correcaoId,
-          fazenda_id: fazendaId,
-          insumo_id: p.insumo_id,
-          produto_nome: p.nome,
-          dose_ton_ha: p.dose_ton_ha,
-        }))
-      );
-    }
-
-    await sb.from("recomendacoes_corretivo").update({ hectares_realizados: Number(hectaresRealizados), data_aplicacao_realizada: dataRealizada }).eq("id", recomendacao.id);
-    await sb.from("tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", tarefaId);
+    const resultado = await enfileirarEExecutar(
+      { id: crypto.randomUUID(), tipo: "fechamento_corretivo", fazenda_id: fazendaId, payload },
+      () => executarFechamentoCorretivo(supabase, payload)
+    );
 
     setSalvando(false);
+    setPendenteSync(!resultado.sincronizado);
     setSucesso(true);
   }
 
@@ -164,7 +161,7 @@ export function FechamentoCorretivo({
       </main>
     );
   }
-  if (sucesso) return <SucessoConclusao onVoltar={() => router.push("/tarefas")} />;
+  if (sucesso) return <SucessoConclusao pendenteSync={pendenteSync} onVoltar={() => router.push("/tarefas")} />;
 
   return (
     <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>

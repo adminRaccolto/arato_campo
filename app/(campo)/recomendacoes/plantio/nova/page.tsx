@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { TalhoesSelector } from "../../_shared/TalhoesSelector";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../_shared/styles";
+import { enfileirarEExecutar } from "@/lib/offline-store";
+import { criarRecomendacao, CONFIG_PLANTIO, type PayloadCriacaoRecomendacao } from "@/lib/recomendacoes/executores";
+import { SucessoCriacao } from "../../_shared/SucessoCriacao";
+import { LocalESafraFields } from "../../_shared/LocalESafraFields";
+import { OperadorField } from "../../_shared/OperadorField";
 
 type ProdutoItem = {
   chave: string;
@@ -55,6 +60,7 @@ export default function NovaRecomendacaoPlantioPage() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+  const [pendenteSync, setPendenteSync] = useState(false);
 
   const dataRecomendacaoHoje = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -111,68 +117,44 @@ export default function NovaRecomendacaoPlantioPage() {
 
     const recomendacaoId = crypto.randomUUID();
     const tarefaId = crypto.randomUUID();
-
-    // Tabelas ainda não existem no banco (ver
-    // db/migrations-draft/004_recomendacoes_plantio.sql) — insert vai falhar
-    // até a migration ser aplicada.
-    const sb = supabase as unknown as {
-      from: (table: string) => ReturnType<typeof supabase.from>;
-    };
-
-    const { error: recomendacaoError } = await sb.from("recomendacoes_plantio").insert({
-      id: recomendacaoId,
-      fazenda_id: fazendaId,
-      ciclo_id: cicloId,
-      criado_por_perfil_id: perfilId,
-      data_recomendacao: dataRecomendacaoHoje,
-      data_aplicacao_indicada: dataAplicacaoIndicada,
-      data_colheita_prevista: dataColheitaPrevista || null,
-      hectares_sugeridos: hectaresSugeridos,
-      populacao_plantas_ha: populacaoPlantasHa ? Number(populacaoPlantasHa) : null,
-      espacamento_entrelinhas_cm: espacamentoCm ? Number(espacamentoCm) : null,
-      profundidade_semeadura_cm: profundidadeCm ? Number(profundidadeCm) : null,
-      velocidade_plantio_kmh: velocidadeKmh ? Number(velocidadeKmh) : null,
-      observacoes: observacoes || null,
-    });
-
-    if (recomendacaoError) {
-      setErro(
-        `Não foi possível salvar: ${recomendacaoError.message}. Provavelmente o schema ainda não foi aplicado no banco (db/migrations-draft/004_recomendacoes_plantio.sql).`
-      );
-      setSalvando(false);
-      return;
-    }
-
     const talhoesSelecionados = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id));
-    await sb.from("recomendacoes_plantio_talhoes").insert(
-      talhoesSelecionados.map((t) => ({
-        id: crypto.randomUUID(),
-        recomendacao_id: recomendacaoId,
-        talhao_id: t.id,
-        area_ha: t.area_ha,
-      }))
-    );
 
-    await sb.from("recomendacoes_plantio_produtos").insert(
-      produtosValidos.map((p) => ({
-        id: crypto.randomUUID(),
-        recomendacao_id: recomendacaoId,
+    const payload: PayloadCriacaoRecomendacao = {
+      recomendacaoId,
+      tarefaId,
+      fazendaId,
+      operadorPerfilId,
+      header: {
+        id: recomendacaoId,
+        fazenda_id: fazendaId,
+        ciclo_id: cicloId,
+        criado_por_perfil_id: perfilId,
+        data_recomendacao: dataRecomendacaoHoje,
+        data_aplicacao_indicada: dataAplicacaoIndicada,
+        data_colheita_prevista: dataColheitaPrevista || null,
+        hectares_sugeridos: hectaresSugeridos,
+        populacao_plantas_ha: populacaoPlantasHa ? Number(populacaoPlantasHa) : null,
+        espacamento_entrelinhas_cm: espacamentoCm ? Number(espacamentoCm) : null,
+        profundidade_semeadura_cm: profundidadeCm ? Number(profundidadeCm) : null,
+        velocidade_plantio_kmh: velocidadeKmh ? Number(velocidadeKmh) : null,
+        observacoes: observacoes || null,
+      },
+      talhoes: talhoesSelecionados.map((t) => ({ talhaoId: t.id, areaHa: t.area_ha })),
+      produtos: produtosValidos.map((p) => ({
         insumo_id: p.insumoId,
         dose_por_ha: Number(p.dosePorHa),
         unidade_dose: p.unidadeDose,
         lote: p.lote || null,
-      }))
+      })),
+    };
+
+    const resultado = await enfileirarEExecutar(
+      { id: recomendacaoId, tipo: "recomendacao_plantio", fazenda_id: fazendaId, payload },
+      () => criarRecomendacao(supabase, CONFIG_PLANTIO, payload)
     );
 
-    await sb.from("tarefas").insert({
-      id: tarefaId,
-      fazenda_id: fazendaId,
-      recomendacao_plantio_id: recomendacaoId,
-      perfil_atribuido_id: operadorPerfilId,
-      status: "pendente",
-    });
-
     setSalvando(false);
+    setPendenteSync(!resultado.sincronizado);
     setSucesso(true);
   }
 
@@ -193,54 +175,7 @@ export default function NovaRecomendacaoPlantioPage() {
   }
 
   if (sucesso) {
-    return (
-      <main
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 16,
-          padding: 24,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 999,
-            background: "var(--verde)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontSize: 28,
-          }}
-        >
-          ✓
-        </div>
-        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
-          Recomendação criada e tarefa atribuída ao operador.
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          style={{
-            height: 48,
-            padding: "0 24px",
-            borderRadius: 8,
-            border: "none",
-            background: "var(--azul-petroleo)",
-            color: "#fff",
-            fontSize: 15,
-            fontWeight: 600,
-          }}
-        >
-          Voltar ao início
-        </button>
-      </main>
-    );
+    return <SucessoCriacao pendenteSync={pendenteSync} onVoltar={() => router.push("/")} />;
   }
 
   return (
@@ -253,42 +188,17 @@ export default function NovaRecomendacaoPlantioPage() {
       </header>
 
       <form onSubmit={handleSubmit} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, padding: 16 }}>
-        <section style={sectionStyle}>
-          <p style={sectionTitleStyle}>Local e safra</p>
-
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelStyle}>Fazenda</span>
-            <select style={inputStyle} value={fazendaId} onChange={(e) => setFazendaId(e.target.value)}>
-              {fazendas.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelStyle}>Ano safra</span>
-            <select style={inputStyle} value={anoSafraId} onChange={(e) => setAnoSafraId(e.target.value)}>
-              {anosSafra.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.descricao}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelStyle}>Ciclo</span>
-            <select style={inputStyle} value={cicloId} onChange={(e) => setCicloId(e.target.value)}>
-              {ciclos.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.descricao} ({c.cultura})
-                </option>
-              ))}
-            </select>
-          </label>
-        </section>
+        <LocalESafraFields
+          fazendas={fazendas}
+          fazendaId={fazendaId}
+          setFazendaId={setFazendaId}
+          anosSafra={anosSafra}
+          anoSafraId={anoSafraId}
+          setAnoSafraId={setAnoSafraId}
+          ciclos={ciclos}
+          cicloId={cicloId}
+          setCicloId={setCicloId}
+        />
 
         <TalhoesSelector
           talhoes={talhoes}
@@ -297,24 +207,7 @@ export default function NovaRecomendacaoPlantioPage() {
           hectaresSugeridos={hectaresSugeridos}
         />
 
-        <section style={sectionStyle}>
-          <p style={sectionTitleStyle}>Operador responsável</p>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelStyle}>Quem vai executar</span>
-            <select style={inputStyle} value={operadorPerfilId} onChange={(e) => setOperadorPerfilId(e.target.value)}>
-              <option value="">Selecione...</option>
-              {perfis.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome ?? p.id}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
-            A recomendação vira uma tarefa exclusiva desse operador. Transferência exige PIN do
-            Gerente Campo.
-          </p>
-        </section>
+        <OperadorField perfis={perfis} operadorPerfilId={operadorPerfilId} setOperadorPerfilId={setOperadorPerfilId} />
 
         <section style={sectionStyle}>
           <p style={sectionTitleStyle}>Semente e inoculante</p>

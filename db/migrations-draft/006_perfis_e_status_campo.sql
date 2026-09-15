@@ -54,6 +54,7 @@ begin
     execute format('alter table %I add column if not exists lancado_por_perfil_id uuid references perfis(id);', tabela);
     execute format('alter table %I add column if not exists aprovado_por_perfil_id uuid references perfis(id);', tabela);
     execute format('alter table %I add column if not exists aprovado_em timestamptz;', tabela);
+    execute format('alter table %I add column if not exists motivo_rejeicao text;', tabela);
   end loop;
 end $$;
 

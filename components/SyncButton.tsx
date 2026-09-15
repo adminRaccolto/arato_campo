@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { lerFila, removerDaFila, contarPendentes } from "@/lib/offline-store";
+import { despacharOperacao } from "@/lib/sync/despachar";
 
 type Status = "idle" | "sincronizando" | "ok" | "erro";
 
@@ -16,6 +17,46 @@ export function SyncButton() {
     setOnline(navigator.onLine);
   }, []);
 
+  const sincronizar = useCallback(async () => {
+    const fila = lerFila();
+    if (fila.length === 0 || !navigator.onLine) return;
+
+    setStatus("sincronizando");
+    setMsg("");
+
+    // Sequencial, não Promise.all: operações de tipos diferentes podem
+    // competir pela mesma linha (ex.: duas tarefas fechando a mesma
+    // recomendação) — mais simples e seguro rodar uma de cada vez aqui,
+    // já que isso roda em segundo plano, sem o operador esperando.
+    const sincronizados: string[] = [];
+    const falhas: string[] = [];
+    for (const op of fila) {
+      try {
+        const resultado = await despacharOperacao(op);
+        if (resultado.ok) sincronizados.push(op.id);
+        else falhas.push(op.id);
+      } catch {
+        falhas.push(op.id);
+      }
+    }
+
+    if (sincronizados.length > 0) removerDaFila(sincronizados);
+    atualizar();
+
+    if (falhas.length === 0) {
+      setStatus("ok");
+      setMsg(`${sincronizados.length} operaç${sincronizados.length === 1 ? "ão enviada" : "ões enviadas"}`);
+    } else {
+      setStatus("erro");
+      setMsg(`${sincronizados.length} enviadas · ${falhas.length} com erro`);
+    }
+
+    setTimeout(() => {
+      setStatus("idle");
+      setMsg("");
+    }, 4000);
+  }, [atualizar]);
+
   useEffect(() => {
     atualizar();
     window.addEventListener("online", atualizar);
@@ -28,51 +69,22 @@ export function SyncButton() {
     };
   }, [atualizar]);
 
-  async function sincronizar() {
-    const fila = lerFila();
-    if (fila.length === 0 || !navigator.onLine) return;
-
-    setStatus("sincronizando");
-    setMsg("");
-
-    try {
-      const res = await fetch("/api/campo/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ops: fila }),
-      });
-      const json = (await res.json()) as {
-        resultados?: { id: string; ok: boolean; erro?: string }[];
-        erro?: string;
-      };
-
-      if (!res.ok || json.erro) throw new Error(json.erro ?? "Erro no servidor");
-
-      const { resultados = [] } = json;
-      const sincronizados = resultados.filter((r) => r.ok).map((r) => r.id);
-      const falhas = resultados.filter((r) => !r.ok);
-
-      if (sincronizados.length > 0) removerDaFila(sincronizados);
-
-      atualizar();
-
-      if (falhas.length === 0) {
-        setStatus("ok");
-        setMsg(`${sincronizados.length} operaç${sincronizados.length === 1 ? "ão enviada" : "ões enviadas"}`);
-      } else {
-        setStatus("erro");
-        setMsg(`${sincronizados.length} enviadas · ${falhas.length} com erro`);
-      }
-    } catch (e) {
-      setStatus("erro");
-      setMsg(e instanceof Error ? e.message : "Erro desconhecido");
+  // Tenta sincronizar sozinho assim que a conexão volta, e por um timer de
+  // retry enquanto houver pendências (CLAUDE.md 4.6) — sem exigir toque do
+  // operador.
+  useEffect(() => {
+    function aoFicarOnline() {
+      sincronizar();
     }
-
-    setTimeout(() => {
-      setStatus("idle");
-      setMsg("");
-    }, 4000);
-  }
+    window.addEventListener("online", aoFicarOnline);
+    const iv = setInterval(() => {
+      if (navigator.onLine && contarPendentes() > 0) sincronizar();
+    }, 45000);
+    return () => {
+      window.removeEventListener("online", aoFicarOnline);
+      clearInterval(iv);
+    };
+  }, [sincronizar]);
 
   if (pendentes === 0 && status === "idle") return null;
 

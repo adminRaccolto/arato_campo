@@ -14,15 +14,19 @@ export type TipoOperacaoPendente =
   | "recomendacao_corretivo"
   | "recomendacao_plantio"
   | "monitoramento"
-  | "fechamento_tarefa";
+  | "fechamento_pulverizacao"
+  | "fechamento_adubacao"
+  | "fechamento_corretivo"
+  | "fechamento_plantio";
 
 export interface OperacaoPendente {
   id: string; // UUID local (crypto.randomUUID) — mesmo id usado no insert, pra idempotência
   tipo: TipoOperacaoPendente;
   fazenda_id: string;
   criado_em: string; // ISO
+  // Formato específico de cada tipo — ver lib/recomendacoes/executores.ts e
+  // lib/tarefas/executores.ts, que sabem interpretar e re-executar cada um.
   payload: Record<string, unknown>;
-  itens?: Record<string, unknown>[];
 }
 
 const FILA_KEY = "campo_fila";
@@ -50,8 +54,56 @@ export function removerDaFila(ids: string[]): void {
   localStorage.setItem(FILA_KEY, JSON.stringify(fila));
 }
 
+/**
+ * Atualiza o payload de uma operação já enfileirada, sem mudar sua posição
+ * nem seu `id`. Usado por executores que fazem progresso parcial antes de
+ * falhar (ex.: Monitoramento sobe as fotos primeiro, e só depois insere o
+ * registro) — sem isso, um retry re-enviaria fotos que já subiram, porque
+ * releria a referência local (`local:<id>`) da tentativa anterior em vez da
+ * URL real já obtida.
+ */
+export function atualizarPayloadNaFila(id: string, payload: Record<string, unknown>): void {
+  const fila = lerFila();
+  const index = fila.findIndex((op) => op.id === id);
+  if (index === -1) return;
+  fila[index] = { ...fila[index], payload };
+  localStorage.setItem(FILA_KEY, JSON.stringify(fila));
+}
+
 export function contarPendentes(): number {
   return lerFila().length;
+}
+
+/**
+ * Grava a operação na fila local ANTES de qualquer coisa (CLAUDE.md 4.6:
+ * "nunca escrita direta condicionada a estar online"), e só então tenta
+ * executá-la de verdade, se houver conexão. Se der certo, tira da fila. Se
+ * falhar (ou estiver offline), fica na fila pro SyncButton tentar de novo
+ * depois — a tela chamadora trata isso como sucesso "pendente de
+ * sincronizar", nunca como erro bloqueante, porque o dado já está salvo
+ * localmente e não deve ser perdido.
+ */
+export async function enfileirarEExecutar(
+  operacao: Omit<OperacaoPendente, "criado_em">,
+  executar: () => Promise<{ ok: boolean; erro?: string }>
+): Promise<{ sincronizado: boolean; erro?: string }> {
+  adicionarNaFila(operacao);
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return { sincronizado: false };
+  }
+
+  try {
+    const resultado = await executar();
+    if (resultado.ok) {
+      removerDaFila([operacao.id]);
+      return { sincronizado: true };
+    }
+    return { sincronizado: false, erro: resultado.erro };
+  } catch (e) {
+    // rede caiu no meio da tentativa — fica na fila normalmente
+    return { sincronizado: false, erro: e instanceof Error ? e.message : "Falha de conexão" };
+  }
 }
 
 // ── Cache de catálogo (talhões, ciclos, insumos…) para preencher formulário offline ──

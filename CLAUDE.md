@@ -319,6 +319,11 @@ sob autorização explícita.
 - Operador pode alternar entre várias fazendas da mesma conta (igual ao farm switcher do Arato
   principal hoje) — precisa do campo `perfis.fazendas_permitidas uuid[]` (lista explícita; não
   herda "todas" por padrão, por segurança)
+- **Papéis dentro do App Campo (decisão 12/set/2026):** Gerente Campo, Operador, Apontador —
+  reaproveita `perfis.papel` (coluna já existente no Arato, hoje livre) em vez de criar coluna
+  nova; restrita a esses 3 valores só quando `produto='campo'` (ver
+  `db/migrations-draft/007_papel_campo.sql`). Só quem tem `papel='gerente_campo'` aprova/rejeita
+  na tela Aprovações (4.3) — não há aprovador designado por pessoa nem por tipo de operação.
 
 ### 4.3 Fluxo de aprovação (obrigatório na v1)
 - Lançamento do operador **não** entra direto como definitivo — precisa ser aprovado por um
@@ -436,6 +441,18 @@ Pendências de engenharia de verdade que restam:
 - Mecanismo de notificação cross-app (App Campo ↔ Arato principal) pra pendência/aprovação (ver
   4.3) — só a necessidade está confirmada, o "como" (polling, tabela de notificações, e-mail,
   badge no TopNav do Arato) ainda não foi decidido
+- **Achado novo (14/set/2026), fora do escopo do App Campo mas registrado aqui por ter sido
+  descoberto durante este trabalho:** o banco real não tem isolamento de tenant por RLS em boa
+  parte das tabelas do Arato principal — `fazendas`/`talhoes`/`insumos`/`perfis`/
+  `monitoramento_pragas` não têm RLS habilitada; `plantios`/`pulverizacoes`/`colheitas`/`ciclos`
+  têm RLS habilitada mas com policy `using (true)` ("allow all", não filtra nada). Isolamento hoje
+  é 100% feito no código da aplicação (query já filtrada por `conta_id`), não no Postgres. Risco
+  reduzido por ora porque o Arato principal ainda não tem clientes finais reais (seção 2.1), mas é
+  uma pendência real de segurança pra resolver antes de abrir a plataforma pra fora — projeto à
+  parte, não algo pra corrigir de passagem numa migration do App Campo. As tabelas NOVAS do App
+  Campo (`recomendacoes_*`, `tarefas`, `tarefas_transferencias`) não seguem esse padrão frágil —
+  ganharam RLS de verdade, escopada por fazenda, via `db/migrations-draft/008_rls_recomendacoes_tarefas.sql`
+  (função `fn_pode_acessar_fazenda_campo`).
 
 ---
 
@@ -465,6 +482,39 @@ pequena e uso com uma mão / possivelmente com luvas, não é uma versão respon
 ---
 
 ## 8. HISTÓRICO
+
+### Sessão de 14 de setembro de 2026 — migrations aplicadas no banco real
+- As 8 migrations rascunho (`db/migrations-draft/001` a `008`) foram revisadas uma última vez e
+  **aplicadas de verdade no banco real** (projeto Supabase `ptbougxydvxxdlhywhps`), numa única
+  transação, na ordem 001 → 002 → 004 → 003 → 005 → 006 → 007 → 008. Confirmado por reintrospecção
+  do schema real: `perfis.produto`/`fazendas_permitidas`, `status_campo`/`origem_lancamento`/
+  `lancado_por_perfil_id`/`aprovado_por_perfil_id`/`aprovado_em`/`motivo_rejeicao` nas 6 tabelas
+  operacionais, as 4 famílias de tabelas `recomendacoes_*`, `tarefas`/`tarefas_transferencias`, e
+  a constraint de `perfis.papel` — tudo existe de verdade agora. `lib/supabase/database.types.ts`
+  regenerado a partir do schema real (antes estava desatualizado desde antes da migration 006).
+- Antes de aplicar, descoberto que o banco real não tem RLS de verdade em boa parte das tabelas do
+  Arato principal (ver pendência nova registrada na seção 5) — decisão do dono: as tabelas novas do
+  App Campo ganham RLS de verdade (escopada por fazenda), sem tentar corrigir o resto do banco de
+  passagem. Isso motivou a migration 008, criada nesta sessão especificamente pra isso.
+- Depois de aplicar, removidos os casts `as unknown as { from: (table: string) => ReturnType<typeof
+  supabase.from> }` que existiam só como workaround enquanto essas colunas/tabelas não existiam no
+  schema gerado — mantido apenas onde o nome da tabela é genuinamente dinâmico em runtime (ex.:
+  `item.tabela` na tela de Aprovações, `tabelaRecomendacao` em `lib/tarefas/executores.ts`), caso em
+  que o cast agora usa `any` explícito com comentário, em vez de `ReturnType<typeof supabase.from>`
+  (que resolve pra UMA tabela fixa do union gerado e produzia erros de tipo confusos/errados).
+- Construídos nesta mesma sessão (antes de aplicar as migrations): fotos offline pro Monitoramento
+  (`lib/offline-photos.ts`, IndexedDB só pra blobs — ver 4.6, é aditivo ao padrão localStorage, não
+  substitui) com preview local e persistência de progresso parcial de upload
+  (`atualizarPayloadNaFila` em `lib/offline-store.ts`) pra retry não reenviar foto já subida.
+- Investigado o item de consumo de estoque na aprovação (débito técnico 2.8): a rota antiga
+  `app/api/campo/consumir-estoque/route.ts` (Arato principal) gera lançamento financeiro (CP) junto
+  com a baixa — só que a lógica de produção de verdade, usada pelas telas desktop (`lib/db.ts` do
+  Arato principal — `processarPlantio`/`processarPulverizacao`/`processarAdubacao`/
+  `processarCorrecao`), **não gera lançamento nenhum** (comentário no código explica: gerar CP de
+  novo aqui duplicava dívida já lançada na NF de compra — bug real já corrigido no passado). Decisão
+  do dono: construir uma rota nova no Arato principal (não portar a rota antiga), replicando a
+  lógica real de `lib/db.ts` com o gate de `status_campo = 'aprovado'` que falta nela — **trabalho
+  em andamento, não concluído nesta sessão**.
 
 ### Sessão de modelagem — 11 de setembro de 2026
 - Projeto scaffoldado (`create-next-app`, Next.js 16.3.4, TypeScript, App Router, sem Tailwind)

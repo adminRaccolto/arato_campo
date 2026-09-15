@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../recomendacoes/_shared/styles";
 import { SucessoConclusao } from "./SucessoConclusao";
+import { enfileirarEExecutar } from "@/lib/offline-store";
+import { executarFechamentoPulverizacao, type PayloadFechamentoPulverizacao } from "@/lib/tarefas/executores";
 
 type RecomendacaoPulverizacao = {
   id: string;
@@ -59,19 +61,18 @@ export function FechamentoPulverizacao({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
+  const [pendenteSync, setPendenteSync] = useState(false);
 
   useEffect(() => {
     async function carregar() {
-      const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-
       const [{ data: recData, error: recError }, { data: talhoesData }, { data: produtosData }] = await Promise.all([
-        sb
+        supabase
           .from("recomendacoes_pulverizacao")
           .select("id, ciclo_id, data_aplicacao_indicada, hectares_sugeridos, volume_calda_l_ha, tipo_bico, pressao_bar, classificacao_gota")
           .eq("id", recomendacaoId)
           .limit(1),
-        sb.from("recomendacoes_pulverizacao_talhoes").select("talhao_id, area_ha, talhoes(nome)").eq("recomendacao_id", recomendacaoId),
-        sb
+        supabase.from("recomendacoes_pulverizacao_talhoes").select("talhao_id, area_ha, talhoes(nome)").eq("recomendacao_id", recomendacaoId),
+        supabase
           .from("recomendacoes_pulverizacao_produtos")
           .select("insumo_id, dose_por_ha, unidade_dose, insumos(nome)")
           .eq("recomendacao_id", recomendacaoId),
@@ -123,52 +124,50 @@ export function FechamentoPulverizacao({
     }
 
     setSalvando(true);
-    const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-    const pulverizacaoId = crypto.randomUUID();
-    const talhaoUnico = talhoes.length === 1 ? talhoes[0].talhao_id : null;
 
-    const { error: insertError } = await supabase.from("pulverizacoes").insert({
-      id: pulverizacaoId,
-      fazenda_id: fazendaId,
-      ciclo_id: recomendacao.ciclo_id,
-      talhao_id: talhaoUnico,
-      data_inicio: dataRealizada,
-      area_ha: Number(hectaresRealizados),
-      tipo: tipoAplicacao,
-      vazao_l_ha: recomendacao.volume_calda_l_ha,
-      estadio_fenologico: estagioFenologico || null,
-      observacao: observacoesReais || null,
-      // status_campo/origem_lancamento/lancado_por_perfil_id ainda não
-      // existem no banco (db/migrations-draft/006_perfis_e_status_campo.sql)
-      status_campo: "pendente",
-      origem_lancamento: "app_campo",
-      lancado_por_perfil_id: auth.perfilId,
-    } as never);
+    // Uma linha de execução por talhão do plano (nunca talhao_id null) — a
+    // área de cada talhão é escalada pela razão entre o total realizado e o
+    // total sugerido, preservando a distribuição do plano. IDs gerados aqui,
+    // uma vez só, e guardados no payload da fila — nunca regerados num
+    // retry (ver lib/tarefas/executores.ts). Assume que todos os talhões
+    // planejados foram tratados; fechamento parcial por talhão ainda não é
+    // suportado.
+    const fatorEscala = talhoes.length > 0 ? Number(hectaresRealizados) / recomendacao.hectares_sugeridos : 1;
+    const linhas = talhoes.map((t) => ({
+      execucaoId: crypto.randomUUID(),
+      talhaoId: t.talhao_id,
+      areaHa: Math.round(t.area_ha * fatorEscala * 100) / 100,
+      itens: produtos.map((p) => ({
+        id: crypto.randomUUID(),
+        insumoId: p.insumo_id,
+        nome: p.nome,
+        dose: p.dose_por_ha,
+        unidade: p.unidade_dose,
+      })),
+    }));
 
-    if (insertError) {
-      setErro(`Não foi possível salvar: ${insertError.message}. Provavelmente o schema ainda não foi aplicado (006).`);
-      setSalvando(false);
-      return;
-    }
+    const payload: PayloadFechamentoPulverizacao = {
+      fazendaId,
+      cicloId: recomendacao.ciclo_id,
+      tarefaId,
+      recomendacaoId: recomendacao.id,
+      perfilId: auth.perfilId,
+      linhas,
+      dataRealizada,
+      hectaresRealizados: Number(hectaresRealizados),
+      observacoes: observacoesReais || null,
+      vazaoLHa: recomendacao.volume_calda_l_ha,
+      tipoAplicacao,
+      estagioFenologico: estagioFenologico || null,
+    };
 
-    if (produtos.length > 0) {
-      await supabase.from("pulverizacao_itens").insert(
-        produtos.map((p) => ({
-          id: crypto.randomUUID(),
-          pulverizacao_id: pulverizacaoId,
-          fazenda_id: fazendaId,
-          insumo_id: p.insumo_id,
-          nome_produto: p.nome,
-          dose_ha: p.dose_por_ha,
-          unidade: p.unidade_dose,
-        }))
-      );
-    }
-
-    await sb.from("recomendacoes_pulverizacao").update({ hectares_realizados: Number(hectaresRealizados), data_aplicacao_realizada: dataRealizada }).eq("id", recomendacao.id);
-    await sb.from("tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() }).eq("id", tarefaId);
+    const resultado = await enfileirarEExecutar(
+      { id: crypto.randomUUID(), tipo: "fechamento_pulverizacao", fazenda_id: fazendaId, payload },
+      () => executarFechamentoPulverizacao(supabase, payload)
+    );
 
     setSalvando(false);
+    setPendenteSync(!resultado.sincronizado);
     setSucesso(true);
   }
 
@@ -186,7 +185,7 @@ export function FechamentoPulverizacao({
       </main>
     );
   }
-  if (sucesso) return <SucessoConclusao onVoltar={() => router.push("/tarefas")} />;
+  if (sucesso) return <SucessoConclusao pendenteSync={pendenteSync} onVoltar={() => router.push("/tarefas")} />;
 
   return (
     <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>

@@ -27,8 +27,7 @@ export default function TarefaPage({ params }: { params: Promise<{ id: string }>
 
   useEffect(() => {
     async function carregar() {
-      const sb = supabase as unknown as { from: (table: string) => ReturnType<typeof supabase.from> };
-      const { data, error } = await sb
+      const { data, error } = await supabase
         .from("tarefas")
         .select(
           "id, fazenda_id, status, recomendacao_pulverizacao_id, recomendacao_adubacao_id, recomendacao_corretivo_id, recomendacao_plantio_id"
@@ -37,14 +36,12 @@ export default function TarefaPage({ params }: { params: Promise<{ id: string }>
         .limit(1);
 
       if (error || !data || data.length === 0) {
-        setErro(
-          `Não foi possível carregar a tarefa: ${error?.message ?? "não encontrada"}. Provavelmente o schema ainda não foi aplicado (db/migrations-draft/003_tarefas.sql).`
-        );
+        setErro(`Não foi possível carregar a tarefa: ${error?.message ?? "não encontrada"}.`);
         setCarregando(false);
         return;
       }
 
-      setTarefa(data[0] as unknown as TarefaRow);
+      setTarefa(data[0]);
       setCarregando(false);
     }
 
