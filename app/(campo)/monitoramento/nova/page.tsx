@@ -361,32 +361,26 @@ export default function NovoMonitoramentoPage() {
         </section>
 
         <section style={sectionStyle}>
-          <p style={sectionTitleStyle}>Tipo de ocorrência</p>
-          <div style={{ display: "flex", gap: 6 }}>
-            {TIPOS.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => {
-                  setTipo(t.value);
-                  setNome("");
-                  setNomeCustom("");
-                }}
-                style={{
-                  flex: 1,
-                  height: 36,
-                  borderRadius: 6,
-                  border: "0.5px solid var(--azul-petroleo)",
-                  background: tipo === t.value ? "var(--azul-petroleo)" : "#fff",
-                  color: tipo === t.value ? "#fff" : "var(--azul-escuro)",
-                  fontSize: 12,
-                  fontWeight: tipo === t.value ? 700 : 400,
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <p style={sectionTitleStyle}>Ocorrência</p>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelStyle}>Tipo</span>
+            <select
+              style={inputStyle}
+              value={tipo}
+              onChange={(e) => {
+                setTipo(e.target.value as TipoOcorrencia);
+                setNome("");
+                setNomeCustom("");
+              }}
+            >
+              {TIPOS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Ocorrência</span>
@@ -408,34 +402,17 @@ export default function NovoMonitoramentoPage() {
               onChange={(e) => setNomeCustom(e.target.value)}
             />
           )}
-        </section>
 
-        <section style={sectionStyle}>
-          <p style={sectionTitleStyle}>Nível de infestação</p>
-          <div style={{ display: "flex", gap: 6 }}>
-            {NIVEIS.map((n) => (
-              <button
-                key={n.n}
-                type="button"
-                onClick={() => setNivel(n.n)}
-                style={{
-                  flex: 1,
-                  height: 36,
-                  borderRadius: 6,
-                  border: `0.5px solid ${n.cor}`,
-                  background: nivel === n.n ? n.cor : "#fff",
-                  color: nivel === n.n ? "#fff" : n.cor,
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {n.label}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
-            {NIVEIS.find((n) => n.n === nivel)?.legenda}
-          </p>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={labelStyle}>Nível de infestação</span>
+            <select style={inputStyle} value={nivel} onChange={(e) => setNivel(Number(e.target.value))}>
+              {NIVEIS.map((n) => (
+                <option key={n.n} value={n.n}>
+                  {n.label} — {n.legenda}
+                </option>
+              ))}
+            </select>
+          </label>
 
           {nomeFinal && !nomeEhOutro && (
             <div style={{ padding: 12, borderRadius: 8, background: "#EAF7EF" }}>

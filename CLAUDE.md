@@ -549,14 +549,19 @@ texto, ou cor aplicada só a borda/texto/chip pequeno, é o padrão sóbrio já 
 **Terceira correção, tamanho dos seletores (16/set/2026, mesmo dia):** mesmo depois de tirar o
 emoji, "Tipo de ocorrência" e "Nível de infestação" (Monitoramento) continuavam como grade de
 botões grandes (padding 12px, 2 colunas) — dono apontou que isso ocupa o espaço vertical de ~2
-seções só pra uma escolha simples de 3-4 opções. Convertido pros dois em controle segmentado
-compacto: uma linha única, botões `height: 36`, preenchimento sólido só no item ativo (cor do
-tipo/severidade), texto direto sem subtítulo por botão — a legenda do nível (ex: "Abaixo do NE")
-virou uma linha de texto única abaixo do controle, mostrando só a do nível selecionado, em vez de
-repetida dentro de cada botão. Regra geral daqui pra frente: uma escolha de poucas opções (3-5) sem
-informação extra por opção é controle segmentado de uma linha (`height: 36`, `flex: 1` por botão),
-nunca grade 2D nem botão com padding generoso — grade/cartão grande só se cada opção precisar
-mesmo de mais de uma linha de informação (como `TalhoesSelector`, que mostra nome + hectares).
+seções só pra uma escolha simples de 3-4 opções. Primeira tentativa: controle segmentado compacto
+(uma linha, botões `height: 36`, preenchimento sólido no item ativo) — ainda assim eram 2 blocos
+(`<section>`) separados. **Correção final, mesmo dia:** o dono pediu 1 bloco só, e trocar o botão
+por `<select>` — mesmo padrão já usado em Fazenda/Talhão/Ciclo/Ocorrência na mesma tela. "Tipo de
+ocorrência" e "Nível de infestação" (Monitoramento) hoje são dois `<select>` dentro da MESMA
+`<section>` "Ocorrência" (que também tem os campos de nome da ocorrência, % plantas afetadas e
+estágio) — sem cor nem botão nenhum, a legenda do nível vira texto dentro da própria `<option>`
+("Baixo — Abaixo do NE"). **Regra pra próxima vez que aparecer um "seletor de poucas opções"
+qualquer:** o padrão default agora é `<select>` simples (`inputStyle`), igual a todo resto do
+formulário — só vale um controle visual mais elaborado (segmentado, chip, grade) quando o dono
+pedir explicitamente algo mais visual, nunca por iniciativa própria "pra ficar mais bonito".
+Botão-grade grande só se cada opção precisar mesmo de mais de uma linha de informação lado a lado
+(como `TalhoesSelector`, que mostra nome + hectares por checkbox).
 
 ---
 
