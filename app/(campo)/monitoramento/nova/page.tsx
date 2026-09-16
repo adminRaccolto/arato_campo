@@ -362,7 +362,7 @@ export default function NovoMonitoramentoPage() {
 
         <section style={sectionStyle}>
           <p style={sectionTitleStyle}>Tipo de ocorrência</p>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 6 }}>
             {TIPOS.map((t) => (
               <button
                 key={t.value}
@@ -374,14 +374,13 @@ export default function NovoMonitoramentoPage() {
                 }}
                 style={{
                   flex: 1,
-                  padding: "11px 8px",
-                  borderRadius: 8,
-                  border: tipo === t.value ? "2px solid var(--azul-petroleo)" : "0.5px solid var(--azul-petroleo)",
-                  background: tipo === t.value ? "#EAF0F6" : "#fff",
-                  textAlign: "center",
-                  fontSize: 13,
+                  height: 36,
+                  borderRadius: 6,
+                  border: "0.5px solid var(--azul-petroleo)",
+                  background: tipo === t.value ? "var(--azul-petroleo)" : "#fff",
+                  color: tipo === t.value ? "#fff" : "var(--azul-escuro)",
+                  fontSize: 12,
                   fontWeight: tipo === t.value ? 700 : 400,
-                  color: "var(--azul-escuro)",
                 }}
               >
                 {t.label}
@@ -413,31 +412,30 @@ export default function NovoMonitoramentoPage() {
 
         <section style={sectionStyle}>
           <p style={sectionTitleStyle}>Nível de infestação</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ display: "flex", gap: 6 }}>
             {NIVEIS.map((n) => (
               <button
                 key={n.n}
                 type="button"
                 onClick={() => setNivel(n.n)}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: 12,
-                  borderRadius: 8,
-                  border: nivel === n.n ? `2px solid ${n.cor}` : "0.5px solid var(--azul-petroleo)",
-                  background: nivel === n.n ? "#F4F6FA" : "#fff",
-                  textAlign: "left",
+                  flex: 1,
+                  height: 36,
+                  borderRadius: 6,
+                  border: `0.5px solid ${n.cor}`,
+                  background: nivel === n.n ? n.cor : "#fff",
+                  color: nivel === n.n ? "#fff" : n.cor,
+                  fontSize: 12,
+                  fontWeight: 600,
                 }}
               >
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: n.cor, flexShrink: 0 }} />
-                <span>
-                  <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: n.cor }}>{n.label}</span>
-                  <span style={{ display: "block", fontSize: 10, color: "var(--azul-petroleo)" }}>{n.legenda}</span>
-                </span>
+                {n.label}
               </button>
             ))}
           </div>
+          <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
+            {NIVEIS.find((n) => n.n === nivel)?.legenda}
+          </p>
 
           {nomeFinal && !nomeEhOutro && (
             <div style={{ padding: 12, borderRadius: 8, background: "#EAF7EF" }}>

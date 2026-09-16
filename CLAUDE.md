@@ -546,6 +546,18 @@ externo casual, não faz parte do "ambiente" do app. Critério pra próxima vez 
 fundo pastel saturado preenchendo o item inteiro, é o padrão a evitar — ícone pequeno ao lado de
 texto, ou cor aplicada só a borda/texto/chip pequeno, é o padrão sóbrio já validado.
 
+**Terceira correção, tamanho dos seletores (16/set/2026, mesmo dia):** mesmo depois de tirar o
+emoji, "Tipo de ocorrência" e "Nível de infestação" (Monitoramento) continuavam como grade de
+botões grandes (padding 12px, 2 colunas) — dono apontou que isso ocupa o espaço vertical de ~2
+seções só pra uma escolha simples de 3-4 opções. Convertido pros dois em controle segmentado
+compacto: uma linha única, botões `height: 36`, preenchimento sólido só no item ativo (cor do
+tipo/severidade), texto direto sem subtítulo por botão — a legenda do nível (ex: "Abaixo do NE")
+virou uma linha de texto única abaixo do controle, mostrando só a do nível selecionado, em vez de
+repetida dentro de cada botão. Regra geral daqui pra frente: uma escolha de poucas opções (3-5) sem
+informação extra por opção é controle segmentado de uma linha (`height: 36`, `flex: 1` por botão),
+nunca grade 2D nem botão com padding generoso — grade/cartão grande só se cada opção precisar
+mesmo de mais de uma linha de informação (como `TalhoesSelector`, que mostra nome + hectares).
+
 ---
 
 ## 8. HISTÓRICO
