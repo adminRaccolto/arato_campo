@@ -38,7 +38,6 @@ export function CompartilharWhatsApp({ mensagem }: { mensagem: string }) {
         justifyContent: "center",
       }}
     >
-      <span>📲</span>
       Compartilhar no WhatsApp
     </button>
   );

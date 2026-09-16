@@ -22,10 +22,10 @@ export const CATALOGO: Record<TipoOcorrencia, string[]> = {
 };
 
 export const NIVEIS = [
-  { n: 1, label: "Baixo", icone: "🟢", cor: "#166534", fundo: "#DCFCE7", legenda: "Abaixo do NE" },
-  { n: 2, label: "Médio", icone: "🟡", cor: "#92400E", fundo: "#FEF3C7", legenda: "Próximo ao NE" },
-  { n: 3, label: "Alto", icone: "🟠", cor: "#9A3412", fundo: "#FFEDD5", legenda: "Acima do NE" },
-  { n: 4, label: "Crítico", icone: "🔴", cor: "#DC2626", fundo: "#FEE2E2", legenda: "Ação emergencial" },
+  { n: 1, label: "Baixo", cor: "#166534", legenda: "Abaixo do NE" },
+  { n: 2, label: "Médio", cor: "#92400E", legenda: "Próximo ao NE" },
+  { n: 3, label: "Alto", cor: "#9A3412", legenda: "Acima do NE" },
+  { n: 4, label: "Crítico", cor: "#DC2626", legenda: "Ação emergencial" },
 ] as const;
 
 // Referência de Nível de Ação Econômica (NE) por ocorrência — orientação

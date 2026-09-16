@@ -524,6 +524,28 @@ já presentes na barra lateral — mostra em vez disso o mapa dos talhões da fa
 KML, `app/(campo)/_shared/FazendaMapaKml.tsx`) e contadores (tarefas pendentes, aprovações
 pendentes pra quem é Gerente Campo).
 
+**Estética — segunda correção de rumo, emoji (16/set/2026):** mesma reclamação, achado novo — a
+tela de Monitoramento (tipo de ocorrência, nível de infestação) usava emoji grande (20-22px) como
+elemento visual principal de botão de seleção, com fundo pastel saturado atrás do item selecionado
+(verde/amarelo/laranja/vermelho-claro cheio). Dono classificou como "lúdico" e pediu ambiente "mais
+sério e formal" — auditoria completa pedida (não só essa tela). Removido emoji decorativo de toda
+UI in-app: botões (tipo de ocorrência, GPS, foto), badges de tipo em listas (Aprovações, Tarefas —
+o rótulo em texto já dizia a mesma coisa, era redundante), mensagens de status offline. Nível de
+infestação perdeu o emoji-círculo e o fundo pastel cheio — vira borda + texto na cor de severidade
+(`cor` em `lib/monitoramento/catalogo.ts`) e um quadradinho de 10px como indicador, fundo neutro
+(`#F4F6FA`) mesmo selecionado. **O que ficou** (avaliado caso a caso, não é proibição geral de
+cor/símbolo): ícones pequenos (15px, opacidade reduzida) na barra lateral de navegação — mesmo
+padrão já aceito no próprio admin do Arato principal (`agrofield/app/admin/layout.tsx`, `NAV`);
+glifos tipográficos funcionais (✓, ⚠, ↑) em `SyncButton`; pílulas de status com fundo leve + texto
+colorido em Tarefas (`STATUS_INFO`) — padrão de chip de status comum em software sério (Linear,
+GitHub), não "lúdico"; caixas de alerta/automático com fundo leve (`#FCEAEA` erro, `#EAF7EF`
+automático) — callout tintado é convenção séria estabelecida, não brinquedo; emoji dentro de texto
+de mensagem de WhatsApp (`⛽`/`✅`/`🌱` nos templates de compartilhamento) — é conteúdo pra um canal
+externo casual, não faz parte do "ambiente" do app. Critério pra próxima vez que algo parecer
+"lúdico demais": emoji grande (18px+) como elemento dominante de um botão/cartão de seleção, ou
+fundo pastel saturado preenchendo o item inteiro, é o padrão a evitar — ícone pequeno ao lado de
+texto, ou cor aplicada só a borda/texto/chip pequeno, é o padrão sóbrio já validado.
+
 ---
 
 ## 8. HISTÓRICO

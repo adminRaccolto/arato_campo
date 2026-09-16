@@ -42,7 +42,7 @@ export function SucessoConclusao({
       </p>
       {pendenteSync && (
         <p style={{ fontSize: 12, color: "var(--mostarda)", fontWeight: 600 }}>
-          📡 Salvo no aparelho — vai sincronizar assim que a conexão voltar.
+          Salvo no aparelho — vai sincronizar assim que a conexão voltar.
         </p>
       )}
       {mensagemWhatsApp && <CompartilharWhatsApp mensagem={mensagemWhatsApp} />}

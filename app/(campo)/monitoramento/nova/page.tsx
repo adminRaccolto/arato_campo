@@ -17,10 +17,10 @@ import {
   salvarFotoLocal,
 } from "@/lib/offline-photos";
 
-const TIPOS: { value: TipoOcorrencia; label: string; icone: string }[] = [
-  { value: "praga", label: "Praga", icone: "🐛" },
-  { value: "doenca", label: "Doença", icone: "🍂" },
-  { value: "planta_daninha", label: "Invasora", icone: "🌿" },
+const TIPOS: { value: TipoOcorrencia; label: string }[] = [
+  { value: "praga", label: "Praga" },
+  { value: "doenca", label: "Doença" },
+  { value: "planta_daninha", label: "Invasora" },
 ];
 
 export default function NovoMonitoramentoPage() {
@@ -252,7 +252,7 @@ export default function NovoMonitoramentoPage() {
         </p>
         {pendenteSync && (
           <p style={{ fontSize: 12, color: "var(--mostarda)", fontWeight: 600 }}>
-            📡 Salvo no aparelho — vai sincronizar assim que a conexão voltar.
+            Salvo no aparelho — vai sincronizar assim que a conexão voltar.
           </p>
         )}
 
@@ -374,17 +374,17 @@ export default function NovoMonitoramentoPage() {
                 }}
                 style={{
                   flex: 1,
-                  padding: "12px 8px",
-                  borderRadius: 10,
+                  padding: "11px 8px",
+                  borderRadius: 8,
                   border: tipo === t.value ? "2px solid var(--azul-petroleo)" : "0.5px solid var(--azul-petroleo)",
                   background: tipo === t.value ? "#EAF0F6" : "#fff",
                   textAlign: "center",
+                  fontSize: 13,
+                  fontWeight: tipo === t.value ? 700 : 400,
+                  color: "var(--azul-escuro)",
                 }}
               >
-                <div style={{ fontSize: 22 }}>{t.icone}</div>
-                <div style={{ fontSize: 11, fontWeight: tipo === t.value ? 700 : 400, color: "var(--azul-escuro)", marginTop: 4 }}>
-                  {t.label}
-                </div>
+                {t.label}
               </button>
             ))}
           </div>
@@ -424,13 +424,13 @@ export default function NovoMonitoramentoPage() {
                   alignItems: "center",
                   gap: 10,
                   padding: 12,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   border: nivel === n.n ? `2px solid ${n.cor}` : "0.5px solid var(--azul-petroleo)",
-                  background: nivel === n.n ? n.fundo : "#fff",
+                  background: nivel === n.n ? "#F4F6FA" : "#fff",
                   textAlign: "left",
                 }}
               >
-                <span style={{ fontSize: 20 }}>{n.icone}</span>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: n.cor, flexShrink: 0 }} />
                 <span>
                   <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: n.cor }}>{n.label}</span>
                   <span style={{ display: "block", fontSize: 10, color: "var(--azul-petroleo)" }}>{n.legenda}</span>
@@ -493,7 +493,7 @@ export default function NovoMonitoramentoPage() {
                 fontWeight: 600,
               }}
             >
-              {gpsBuscando ? "Obtendo localização..." : "📍 Capturar GPS"}
+              {gpsBuscando ? "Obtendo localização..." : "Capturar GPS"}
             </button>
           ) : (
             <>
@@ -552,7 +552,7 @@ export default function NovoMonitoramentoPage() {
                         borderRadius: 4,
                       }}
                     >
-                      📡 offline
+                      offline
                     </span>
                   )}
                   <button
@@ -596,7 +596,7 @@ export default function NovoMonitoramentoPage() {
                   fontWeight: 600,
                 }}
               >
-                {enviandoFoto ? "Enviando..." : "📷 Tirar / selecionar foto"}
+                {enviandoFoto ? "Enviando..." : "Tirar / selecionar foto"}
               </button>
               <input
                 ref={fileRef}

@@ -24,12 +24,12 @@ type ItemPendente = {
   produtos: ProdutoComparado[];
 };
 
-const TIPO_INFO: Record<TipoOperacao, { label: string; icone: string }> = {
-  plantio: { label: "Plantio", icone: "🌱" },
-  pulverizacao: { label: "Pulverização", icone: "💧" },
-  adubacao: { label: "Adubação", icone: "🌿" },
-  corretivo: { label: "Corretivo", icone: "⚗️" },
-  abastecimento: { label: "Abastecimento", icone: "⛽" },
+const TIPO_INFO: Record<TipoOperacao, { label: string }> = {
+  plantio: { label: "Plantio" },
+  pulverizacao: { label: "Pulverização" },
+  adubacao: { label: "Adubação" },
+  corretivo: { label: "Corretivo" },
+  abastecimento: { label: "Abastecimento" },
 };
 
 export default function AprovacoesPage() {
@@ -386,7 +386,6 @@ export default function AprovacoesPage() {
           return (
             <div key={item.id} style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 22 }}>{info.icone}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "var(--azul-escuro)" }}>
                     {info.label} — {item.detalhe}

@@ -171,7 +171,6 @@ export function SyncButton() {
           <>⚠ Tentar novamente</>
         ) : (
           <>
-            {!online && <span style={{ fontSize: 10 }}>📡</span>}
             <span>↑ Sincronizar</span>
             {pendentes > 0 && (
               <span

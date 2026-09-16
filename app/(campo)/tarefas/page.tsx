@@ -31,11 +31,11 @@ type TarefaExibicao = {
   resumo: Resumo | null;
 };
 
-const TIPO_INFO: Record<TipoTarefa, { label: string; icone: string }> = {
-  pulverizacao: { label: "Pulverização", icone: "💧" },
-  adubacao: { label: "Adubação", icone: "🌿" },
-  corretivo: { label: "Corretivo", icone: "⚗️" },
-  plantio: { label: "Plantio", icone: "🌱" },
+const TIPO_INFO: Record<TipoTarefa, { label: string }> = {
+  pulverizacao: { label: "Pulverização" },
+  adubacao: { label: "Adubação" },
+  corretivo: { label: "Corretivo" },
+  plantio: { label: "Plantio" },
 };
 
 const STATUS_INFO: Record<string, { label: string; cor: string; fundo: string }> = {
@@ -227,7 +227,6 @@ export default function TarefasPage() {
                 background: "#fff",
               }}
             >
-              <span style={{ fontSize: 24 }}>{info.icone}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 14, fontWeight: 600, color: "var(--azul-escuro)" }}>{info.label}</p>
                 <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
