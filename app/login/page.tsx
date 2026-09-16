@@ -45,22 +45,14 @@ export default function LoginPage() {
       }}
     >
       <div style={{ textAlign: "center", marginBottom: 8 }}>
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 16,
-            background: "var(--azul-petroleo)",
-            margin: "0 auto 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span style={{ color: "var(--mostarda)", fontSize: 28, fontWeight: 600 }}>C</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/icon.png"
+          alt="Arato"
+          style={{ width: 180, maxWidth: "70%", height: "auto", margin: "0 auto 16px", display: "block" }}
+        />
         <h1 style={{ fontSize: 17, fontWeight: 600, color: "var(--azul-escuro)" }}>
-          Campo
+          App Campo
         </h1>
         <p style={{ fontSize: 13, color: "var(--azul-petroleo)", marginTop: 4 }}>
           Entre com seu e-mail e PIN

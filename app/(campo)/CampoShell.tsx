@@ -98,29 +98,12 @@ export function CampoShell({ children }: { children: React.ReactNode }) {
 
       <aside className="campo-sidebar" data-aberto={menuAberto}>
         <div style={{ padding: "20px 18px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-          {auth.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={auth.logoUrl}
-              alt="Logo do cliente"
-              style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", background: "#fff" }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: "var(--azul-petroleo)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ color: "var(--mostarda)", fontSize: 17, fontWeight: 700 }}>C</span>
-            </div>
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={auth.logoUrl ?? "/icons/icon-192.png"}
+            alt={auth.logoUrl ? "Logo do cliente" : "Arato"}
+            style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", background: "#fff" }}
+          />
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>Campo</p>
             <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>by Arato</p>
