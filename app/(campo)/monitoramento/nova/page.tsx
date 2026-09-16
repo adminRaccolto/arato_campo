@@ -363,24 +363,36 @@ export default function NovoMonitoramentoPage() {
         <section style={sectionStyle}>
           <p style={sectionTitleStyle}>Ocorrência</p>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Tipo</span>
-            <select
-              style={inputStyle}
-              value={tipo}
-              onChange={(e) => {
-                setTipo(e.target.value as TipoOcorrencia);
-                setNome("");
-                setNomeCustom("");
-              }}
-            >
-              {TIPOS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            {TIPOS.map((t) => (
+              <label
+                key={t.value}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "0.5px solid var(--azul-petroleo)",
+                  background: tipo === t.value ? "#EAF0F6" : "#fff",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="tipo-ocorrencia"
+                  checked={tipo === t.value}
+                  onChange={() => {
+                    setTipo(t.value);
+                    setNome("");
+                    setNomeCustom("");
+                  }}
+                  style={{ width: 18, height: 18 }}
+                />
+                <span style={{ fontSize: 14 }}>{t.label}</span>
+              </label>
+            ))}
+          </div>
 
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Ocorrência</span>
@@ -403,16 +415,33 @@ export default function NovoMonitoramentoPage() {
             />
           )}
 
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Nível de infestação</span>
-            <select style={inputStyle} value={nivel} onChange={(e) => setNivel(Number(e.target.value))}>
-              {NIVEIS.map((n) => (
-                <option key={n.n} value={n.n}>
-                  {n.label} — {n.legenda}
-                </option>
-              ))}
-            </select>
-          </label>
+            {NIVEIS.map((n) => (
+              <label
+                key={n.n}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "0.5px solid var(--azul-petroleo)",
+                  background: nivel === n.n ? "#F4F6FA" : "#fff",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="nivel-infestacao"
+                  checked={nivel === n.n}
+                  onChange={() => setNivel(n.n)}
+                  style={{ width: 18, height: 18 }}
+                />
+                <span style={{ fontSize: 14, fontWeight: 600, color: n.cor }}>{n.label}</span>
+                <span style={{ fontSize: 11, color: "var(--azul-petroleo)", marginLeft: "auto" }}>{n.legenda}</span>
+              </label>
+            ))}
+          </div>
 
           {nomeFinal && !nomeEhOutro && (
             <div style={{ padding: 12, borderRadius: 8, background: "#EAF7EF" }}>

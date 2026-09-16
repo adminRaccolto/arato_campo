@@ -549,19 +549,21 @@ texto, ou cor aplicada só a borda/texto/chip pequeno, é o padrão sóbrio já 
 **Terceira correção, tamanho dos seletores (16/set/2026, mesmo dia):** mesmo depois de tirar o
 emoji, "Tipo de ocorrência" e "Nível de infestação" (Monitoramento) continuavam como grade de
 botões grandes (padding 12px, 2 colunas) — dono apontou que isso ocupa o espaço vertical de ~2
-seções só pra uma escolha simples de 3-4 opções. Primeira tentativa: controle segmentado compacto
-(uma linha, botões `height: 36`, preenchimento sólido no item ativo) — ainda assim eram 2 blocos
-(`<section>`) separados. **Correção final, mesmo dia:** o dono pediu 1 bloco só, e trocar o botão
-por `<select>` — mesmo padrão já usado em Fazenda/Talhão/Ciclo/Ocorrência na mesma tela. "Tipo de
-ocorrência" e "Nível de infestação" (Monitoramento) hoje são dois `<select>` dentro da MESMA
-`<section>` "Ocorrência" (que também tem os campos de nome da ocorrência, % plantas afetadas e
-estágio) — sem cor nem botão nenhum, a legenda do nível vira texto dentro da própria `<option>`
-("Baixo — Abaixo do NE"). **Regra pra próxima vez que aparecer um "seletor de poucas opções"
-qualquer:** o padrão default agora é `<select>` simples (`inputStyle`), igual a todo resto do
-formulário — só vale um controle visual mais elaborado (segmentado, chip, grade) quando o dono
-pedir explicitamente algo mais visual, nunca por iniciativa própria "pra ficar mais bonito".
-Botão-grade grande só se cada opção precisar mesmo de mais de uma linha de informação lado a lado
-(como `TalhoesSelector`, que mostra nome + hectares por checkbox).
+seções só pra uma escolha simples de 3-4 opções. Três tentativas no mesmo dia até acertar:
+1) controle segmentado compacto (uma linha, botões `height: 36`) — ainda 2 blocos (`<section>`)
+separados; 2) fundido num bloco só, mas trocando o botão por `<select>` (dropdown nativo) — dono
+rejeitou de novo: "não quero em dropdown, mas em caixa de seleção"; 3) **versão final:** lista
+vertical de caixas de seleção única (`<input type="radio">`), uma por opção, dentro de uma `<label>`
+com borda e destaque de fundo quando marcada — mesmo padrão visual do `TalhoesSelector` (linha com
+borda 0.5px, fundo claro no item ativo), só que radio (single-select) em vez de checkbox
+(multi-select). "Tipo de ocorrência" e "Nível de infestação" hoje são dois grupos de radio-box
+assim, dentro da MESMA `<section>` "Ocorrência" (junto com nome da ocorrência, % plantas afetadas e
+estágio) — o nível mantém a cor de severidade no texto do label e a legenda (ex: "Abaixo do NE") ao
+lado, dentro da própria caixa. **Regra pra próxima vez que aparecer um "seletor de poucas opções"
+qualquer neste app:** dropdown nativo (`<select>`) NÃO é o padrão default aqui — o dono prefere
+caixa de seleção visível (radio/checkbox em `<label>` com borda), mesmo padrão do `TalhoesSelector`.
+Só usar `<select>` quando a lista for de fato longa (a de "Ocorrência" em si, com 10+ itens, ou
+Fazenda/Talhão/Ciclo, que variam por conta) — pra 3-5 opções fixas, é lista de caixa marcável.
 
 ---
 
