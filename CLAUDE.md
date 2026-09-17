@@ -365,12 +365,20 @@ sob autorização explícita.
   fazenda explícita, não pela conta inteira como o gestor Arato
 
 ### 4.5 Ativação / ambiente dedicado no admin
-- `/admin/campo` (novo, no repo do Arato principal): lista de contas com App Campo habilitado,
-  toggle de ativação (reaproveita padrão `conta_modulos`, `modulo = 'app_campo'`), cadastro/reset
-  de operadores e PINs, quais fazendas cada operador acessa
+
+**Revisado (17/set/2026) — ver seção 8 pro raciocínio completo.** `/admin/campo` (repo do Arato
+principal) cuida só de **assinatura e liberação**: lista de contas, toggle `conta_modulos.modulo =
+'app_campo'`, e uma lista de operadores **somente leitura** (suporte). A gestão de verdade
+(criar/editar operador, resetar PIN) é **self-service**, feita pelo próprio gestor da fazenda
+dentro do Arato Web, em Configurações > Usuários e Permissões — não existe mais uma tela de
+cadastro de operador dentro do admin Raccolto. Raciocínio do dono: manter isso só no admin
+Raccolto obriga o cliente a pedir ajuda toda vez que precisa adicionar alguém, o que não escala; e
+como o App Campo nunca é vendido sem o Arato, não faz sentido ter duas bases de usuário geridas em
+dois lugares diferentes.
 - Login do App Campo só funciona se `perfis.produto = 'campo'` **E** a conta tiver
   `conta_modulos.app_campo.habilitado = true` — desativar a cobrança já barra o acesso sem precisar
-  apagar cadastro de ninguém
+  apagar cadastro de ninguém. Esse é também o gate que decide se a seção "Acesso ao App Campo"
+  aparece ou não no cadastro de usuário do Arato Web.
 
 ### 4.6 Arquitetura offline — obrigatória desde a v1
 
@@ -568,6 +576,76 @@ Fazenda/Talhão/Ciclo, que variam por conta) — pra 3-5 opções fixas, é list
 ---
 
 ## 8. HISTÓRICO
+
+### Sessão de 17 de setembro de 2026 — gestão de operador vira self-service
+
+O dono testou `/admin/campo` (Raccolto) recém-construído e apontou um problema de arquitetura, não
+de UI: se a gestão de operador (criar/editar/resetar PIN) só existe dentro do admin Raccolto, todo
+cliente que precisar adicionar um operador novo tem que pedir ajuda pra Raccolto — não escala. A
+posição dele, resumida:
+- Admin Raccolto deveria cuidar só de **assinatura** (é um addon, cobrança própria) e **liberação
+  de acesso** (o toggle `conta_modulos`) — não de gestão de usuário individual.
+- Usuário é assunto do **Arato Web**, onde o gestor da fazenda já cadastra o resto da equipe
+  (Configurações > Usuários e Permissões) — inclusive já existe lá um preset de permissão chamado
+  "Operador de Campo" (achado depois, ver nota abaixo: não é o que parecia).
+- "Seria besteira duas bases" — não devia existir um sistema de usuário paralelo pro App Campo,
+  já que ele nunca é vendido separado do Arato (seção 1).
+
+**Investigação antes de mexer** (via agente de exploração, no repo `agrofield`) — importante porque
+o pedido do dono citava coisas que não existiam do jeito que ele lembrava:
+- A tela de usuário que o gestor realmente usa é `app/configuracoes/usuarios/page.tsx` (não
+  `app/cadastros?tab=usuarios`, que é código morto/órfão — sem link nenhum na navegação viva).
+- **Não existe** campo `papel` nessa tela, nem nunca existiu "Operador de Campo" como opção de
+  papel de usuário — o que existe com esse nome é só o *label* de um preset de permissão
+  (`PERFIS_PRESET.operador`, usado só pra pré-popular a matriz de permissões de um **grupo** de
+  usuários) — sem relação nenhuma com o `perfis.papel` (`gerente_campo`/`operador`) do App Campo.
+- Achado um "Tipo de Acesso" na tela órfã (`app/cadastros`) com opção "App de Campo (mobile)" —
+  mas isso grava `perfis.role = 'campo'`, o flag do módulo `app/campo` **antigo**, embutido no
+  Arato principal e mantido intocado por decisão anterior (seção 2.9) — **não** é o mesmo conceito
+  de `perfis.produto = 'campo'` (este projeto). Confirma que já existiam 3 conceitos de "campo"
+  parcialmente sobrepostos em `perfis` antes desta sessão: `role='campo'` (legado, intocado),
+  `produto='campo'` (este projeto), `papel` gerente_campo/operador (só dentro de produto='campo').
+  Essa mudança não resolve a sobreposição — só evita criar um *quarto* sistema.
+- `usuarios` (tabela do Arato Web, ligada a `grupos_usuarios`/permissões) é uma tabela **diferente**
+  de `perfis` (a tabela de auth/RLS que o App Campo usa) — sem FK entre as duas antes desta sessão.
+
+**Decisão de desenho, dado esse cenário:** não dava (nem fazia sentido) fundir os dois modelos de
+login numa linha só — o App Campo continua sendo um perfil **paralelo** (`perfis`, `produto='campo'`,
+e-mail sintético + PIN via Supabase Auth), pelo mesmo motivo de sempre (celular do operador,
+possivelmente sem e-mail próprio, PIN curto — não faz sentido pra um gestor com conta ERP normal).
+O que muda é **onde** esse perfil paralelo é criado: em vez de um formulário à parte no admin
+Raccolto, agora é uma seção dentro do MESMO modal de "criar/editar usuário" que o gestor já usa no
+Arato Web — o gestor nem precisa saber que por baixo são dois logins diferentes. Pra tela de edição
+saber se uma pessoa já tem (ou não) acesso ao Campo ao reabrir o cadastro, precisa de vínculo
+explícito: `perfis.usuario_vinculado_id → usuarios.id` (migration rascunho `013_link_usuario_campo.sql`,
+nullable — cobre também o caso de um operador que nunca teve usuário Arato Web, só usa o Campo).
+
+**O que foi construído** (tudo no repo `agrofield`, nada de novo aqui neste repo além da migration):
+- `lib/campo-operador.ts` — extraído de `app/api/admin/campo/operador/route.ts` (geração de e-mail
+  sintético único + PIN), compartilhado entre a rota antiga e a nova.
+- `app/api/campo/operador-conta/route.ts` — rota nova, **self-service**: autentica o chamador via
+  `validateFazendaAccess` (helper já existente, `lib/api-auth.ts` — mesmo padrão de
+  `app/api/usuarios-cliente`), deriva `conta_id` sempre a partir da `fazenda_id` (nunca aceita
+  direto do body), e exige `conta_modulos.app_campo.habilitado = true` antes de criar qualquer
+  coisa — Admin Raccolto continua sendo quem decide se a conta pode, essa rota só confere.
+- `app/api/admin/campo/operador/route.ts` (a rota antiga, Raccolto-only) — **mantida**, sem UI
+  própria mais, como via de suporte/emergência (ex: gestor perdeu acesso e liga pra Raccolto).
+- `app/admin/campo/page.tsx` — reduzida a: seletor de conta, toggle de assinatura, lista de
+  operadores somente leitura (sem criar/editar/resetar/bloquear).
+- `app/configuracoes/usuarios/page.tsx` — modal de usuário ganhou a seção "Acesso ao App Campo"
+  (toggle + papel Operador/Gerente Campo + WhatsApp do Campo, distinto do WhatsApp do assistente de
+  IA que a tela já tinha) — só aparece se `conta_modulos.app_campo.habilitado`. Criar/editar/
+  desativar acesso e resetar PIN tudo dali, mostrando a credencial gerada (e-mail + PIN) uma vez só.
+- **Só 2 papéis por enquanto** (Operador, Gerente Campo) — "Apontador" existia na modelagem original
+  (seção 4.2) mas ficou de fora desta rodada por pedido explícito do dono; código já preparado pra
+  reintroduzir (`PAPEIS_VALIDOS` na rota, `papel` na tabela) se precisar, sem migration nova.
+
+**Pendência real, bloqueante:** a migration `013_link_usuario_campo.sql` (`db/migrations-draft/`
+deste repo) ainda **não foi aplicada** no banco — como de costume, só o dono aplica
+(`supabase db query --linked --file ...`), nunca a sessão sozinha. Até rodar, a seção "Acesso ao
+App Campo" em Configurações > Usuários **não funciona**: todo INSERT em `perfis` daquela rota
+sempre manda o campo `usuario_vinculado_id` (mesmo que `null`), e o PostgREST rejeita colunas que
+não existem no schema — não é um caso de "funciona parcialmente", a criação falha inteira.
 
 ### Correção de cascata — exclusão no Arato principal não estornava estoque
 Achado numa auditoria pedida pelo dono (15/set/2026): as funções de exclusão do desktop
