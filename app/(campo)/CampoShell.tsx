@@ -18,9 +18,11 @@ const NAV_ITEMS = [
   { href: "/abastecimento/nova", label: "Abastecimento", icone: "⛽" },
 ] as const;
 
-// Só aparece pra quem pode aprovar — mantém o menu enxuto pra
-// Operador/Apontador, que nunca usam essa tela.
-const NAV_ITEM_APROVACOES = { href: "/aprovacoes", label: "Aprovações", icone: "✅" } as const;
+// "Aprovações" aparece pra todo mundo (17/set/2026: Operador também precisa
+// ver — e editar — os próprios lançamentos pendentes, só que sem aprovar
+// nada), rótulo muda conforme o papel. "Recomendações" (lista + edição
+// enquanto a tarefa não fecha) só aparece pra quem cria recomendação.
+const NAV_ITEM_RECOMENDACOES = { href: "/recomendacoes", label: "Recomendações", icone: "📑" } as const;
 
 const PAPEL_LABEL: Record<string, string> = {
   gerente_campo: "Gerente Campo",
@@ -79,7 +81,11 @@ export function CampoShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const itensNav = auth.ehGerenteCampo ? [...NAV_ITEMS, NAV_ITEM_APROVACOES] : NAV_ITEMS;
+  const itensNav = [
+    ...NAV_ITEMS,
+    ...(auth.ehGerenteCampo ? [NAV_ITEM_RECOMENDACOES] : []),
+    { href: "/aprovacoes", label: auth.ehGerenteCampo ? "Aprovações" : "Meus Lançamentos", icone: "✅" },
+  ];
 
   function fechar() {
     setMenuAberto(false);

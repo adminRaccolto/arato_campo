@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { sectionStyle } from "../recomendacoes/_shared/styles";
@@ -49,14 +50,13 @@ export default function AprovacoesPage() {
 
   useEffect(() => {
     if (auth.carregando) return;
-    if (!auth.ehGerenteCampo) {
-      setCarregando(false);
-      return;
-    }
 
     async function carregar() {
-      // Fazendas visíveis pra este Gerente Campo — mesmo escopo por
-      // fazendas_permitidas (ou fallback por conta) do resto do app.
+      // Fazendas visíveis — mesmo escopo por fazendas_permitidas (ou
+      // fallback por conta) do resto do app, pro Gerente Campo e pro
+      // Operador igual (achado 17/set/2026: Operador também precisa
+      // enxergar — e editar — os próprios lançamentos pendentes, só que sem
+      // aprovar/rejeitar; ver TIPO_ACESSO abaixo).
       let queryFazendas = supabase.from("fazendas").select("id, nome");
       queryFazendas = auth.fazendasPermitidas
         ? queryFazendas.in("id", auth.fazendasPermitidas)
@@ -78,32 +78,52 @@ export default function AprovacoesPage() {
         return;
       }
 
+      // Operador só vê (e só edita) o que ele mesmo lançou — Gerente Campo
+      // vê tudo pendente nas fazendas que acessa, pra aprovar/rejeitar.
+      const somenteProprio = !auth.ehGerenteCampo;
+      const meuPerfilId = auth.perfilId ?? "";
+
+      let queryPlantios = supabase
+        .from("plantios")
+        .select("id, fazenda_id, area_ha, data_plantio, variedade, lancado_por_perfil_id, maquina_id, dose_kg_ha, dose_kg_ha_recomendada, talhoes(nome)")
+        .in("fazenda_id", fazendaIds)
+        .eq("status_campo", "pendente");
+      if (somenteProprio) queryPlantios = queryPlantios.eq("lancado_por_perfil_id", meuPerfilId);
+
+      let queryPulverizacoes = supabase
+        .from("pulverizacoes")
+        .select("id, fazenda_id, area_ha, data_inicio, tipo, lancado_por_perfil_id, maquina_id, talhoes(nome)")
+        .in("fazenda_id", fazendaIds)
+        .eq("status_campo", "pendente");
+      if (somenteProprio) queryPulverizacoes = queryPulverizacoes.eq("lancado_por_perfil_id", meuPerfilId);
+
+      let queryAdubacoes = supabase
+        .from("adubacoes_base")
+        .select("id, fazenda_id, area_ha, data_aplicacao, modalidade, lancado_por_perfil_id, maquina_id, talhoes(nome)")
+        .in("fazenda_id", fazendaIds)
+        .eq("status_campo", "pendente");
+      if (somenteProprio) queryAdubacoes = queryAdubacoes.eq("lancado_por_perfil_id", meuPerfilId);
+
+      let queryCorrecoes = supabase
+        .from("correcoes_solo")
+        .select("id, fazenda_id, area_ha, data_aplicacao, finalidade, lancado_por_perfil_id, maquina_id, talhoes(nome)")
+        .in("fazenda_id", fazendaIds)
+        .eq("status_campo", "pendente");
+      if (somenteProprio) queryCorrecoes = queryCorrecoes.eq("lancado_por_perfil_id", meuPerfilId);
+
+      let queryAbastecimentos = supabase
+        .from("abastecimentos")
+        .select("id, fazenda_id, data, quantidade_l, insumo_id, lancado_por_perfil_id, abastecido_por_perfil_id, maquina_id")
+        .in("fazenda_id", fazendaIds)
+        .eq("status_campo", "pendente");
+      if (somenteProprio) queryAbastecimentos = queryAbastecimentos.eq("lancado_por_perfil_id", meuPerfilId);
+
       const [plantiosRes, pulverizacoesRes, adubacoesRes, correcoesRes, abastecimentosRes] = await Promise.all([
-        supabase
-          .from("plantios")
-          .select("id, fazenda_id, area_ha, data_plantio, variedade, lancado_por_perfil_id, maquina_id, dose_kg_ha, dose_kg_ha_recomendada, talhoes(nome)")
-          .in("fazenda_id", fazendaIds)
-          .eq("status_campo", "pendente"),
-        supabase
-          .from("pulverizacoes")
-          .select("id, fazenda_id, area_ha, data_inicio, tipo, lancado_por_perfil_id, maquina_id, talhoes(nome)")
-          .in("fazenda_id", fazendaIds)
-          .eq("status_campo", "pendente"),
-        supabase
-          .from("adubacoes_base")
-          .select("id, fazenda_id, area_ha, data_aplicacao, modalidade, lancado_por_perfil_id, maquina_id, talhoes(nome)")
-          .in("fazenda_id", fazendaIds)
-          .eq("status_campo", "pendente"),
-        supabase
-          .from("correcoes_solo")
-          .select("id, fazenda_id, area_ha, data_aplicacao, finalidade, lancado_por_perfil_id, maquina_id, talhoes(nome)")
-          .in("fazenda_id", fazendaIds)
-          .eq("status_campo", "pendente"),
-        supabase
-          .from("abastecimentos")
-          .select("id, fazenda_id, data, quantidade_l, insumo_id, lancado_por_perfil_id, abastecido_por_perfil_id, maquina_id")
-          .in("fazenda_id", fazendaIds)
-          .eq("status_campo", "pendente"),
+        queryPlantios,
+        queryPulverizacoes,
+        queryAdubacoes,
+        queryCorrecoes,
+        queryAbastecimentos,
       ]);
 
       const erroConsulta =
@@ -291,7 +311,7 @@ export default function AprovacoesPage() {
     }
 
     carregar();
-  }, [auth.carregando, auth.ehGerenteCampo, auth.fazendasPermitidas, auth.contaId, supabase]);
+  }, [auth.carregando, auth.ehGerenteCampo, auth.fazendasPermitidas, auth.contaId, auth.perfilId, supabase]);
 
   // Aprovar/rejeitar não escreve mais direto nas tabelas — passa pela rota
   // cross-app no Arato principal (agrofield: app/api/campo/aprovar-lancamento),
@@ -349,20 +369,12 @@ export default function AprovacoesPage() {
     );
   }
 
-  if (!auth.ehGerenteCampo) {
-    return (
-      <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <p style={{ fontSize: 13, color: "var(--azul-petroleo)", textAlign: "center" }}>
-          Só o Gerente Campo aprova lançamentos.
-        </p>
-      </main>
-    );
-  }
-
   return (
     <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       <header style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--azul-petroleo)", background: "#fff" }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>Aprovações</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
+          {auth.ehGerenteCampo ? "Aprovações" : "Meus Lançamentos"}
+        </p>
         <p style={{ fontSize: 11, color: "var(--azul-petroleo)" }}>
           {itens.length} pendente{itens.length === 1 ? "" : "s"}
         </p>
@@ -466,22 +478,38 @@ export default function AprovacoesPage() {
                 </div>
               ) : (
                 <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                  <button
-                    type="button"
-                    onClick={() => setRejeitandoId(item.id)}
-                    disabled={processando === item.id}
-                    style={{ flex: 1, height: 42, borderRadius: 8, border: "0.5px solid var(--vermelho)", background: "#fff", color: "var(--vermelho)", fontSize: 13, fontWeight: 600 }}
+                  <Link
+                    href={`/aprovacoes/editar/${item.tabela}/${item.id}`}
+                    style={{
+                      flex: auth.ehGerenteCampo ? "0 0 auto" : 1,
+                      padding: auth.ehGerenteCampo ? "0 16px" : undefined,
+                      height: 42, borderRadius: 8, border: "0.5px solid var(--azul-petroleo)",
+                      background: "#fff", color: "var(--azul-petroleo)", fontSize: 13, fontWeight: 600,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
                   >
-                    Rejeitar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aprovar(item)}
-                    disabled={processando === item.id}
-                    style={{ flex: 1, height: 42, borderRadius: 8, border: "none", background: "var(--verde)", color: "#fff", fontSize: 13, fontWeight: 600 }}
-                  >
-                    {processando === item.id ? "..." : "Aprovar"}
-                  </button>
+                    Editar
+                  </Link>
+                  {auth.ehGerenteCampo && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setRejeitandoId(item.id)}
+                        disabled={processando === item.id}
+                        style={{ flex: 1, height: 42, borderRadius: 8, border: "0.5px solid var(--vermelho)", background: "#fff", color: "var(--vermelho)", fontSize: 13, fontWeight: 600 }}
+                      >
+                        Rejeitar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => aprovar(item)}
+                        disabled={processando === item.id}
+                        style={{ flex: 1, height: 42, borderRadius: 8, border: "none", background: "var(--verde)", color: "#fff", fontSize: 13, fontWeight: 600 }}
+                      >
+                        {processando === item.id ? "..." : "Aprovar"}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -490,7 +518,9 @@ export default function AprovacoesPage() {
 
         {itens.length > 0 && (
           <p style={{ fontSize: 11, color: "var(--azul-petroleo)", textAlign: "center", marginTop: 8 }}>
-            Aprovar já baixa o estoque dos insumos usados e libera o lançamento pros relatórios.
+            {auth.ehGerenteCampo
+              ? "Aprovar já baixa o estoque dos insumos usados e libera o lançamento pros relatórios."
+              : "Você pode editar um lançamento enquanto ele estiver pendente de aprovação."}
           </p>
         )}
       </div>

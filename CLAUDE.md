@@ -577,6 +577,63 @@ Fazenda/Talhão/Ciclo, que variam por conta) — pra 3-5 opções fixas, é list
 
 ## 8. HISTÓRICO
 
+### Sessão de 17 de setembro de 2026 (2) — edição de recomendação/lançamento pendente
+
+Pergunta do dono: dava pra editar uma recomendação ou um lançamento (aplicação) já registrado,
+tanto por quem lançou quanto pelo aprovador? Não dava — nem existia em nenhum dos dois repos
+(confirmado por auditoria antes de codar). Decisão de escopo: **só enquanto pendente** — uma
+recomendação editável enquanto a tarefa dela ainda não fechou (`pendente`/`em_andamento`), um
+lançamento editável enquanto `status_campo = 'pendente'`. Editar depois de aprovado (que exigiria
+estornar e rebaixar estoque de novo, cross-app) ficou fora por decisão explícita — pode entrar
+depois se precisar.
+
+**Quem edita o quê:**
+- Lançamento (aplicação): quem lançou (`lancado_por_perfil_id`) OU qualquer Gerente Campo com
+  acesso à fazenda — mesma regra de quem já podia aprovar.
+- Recomendação: só Gerente Campo (não existe "aprovador" separado pra recomendação — quem cria já
+  é quem corrige).
+
+**Navegação nova** (não existia lugar nenhum pro Operador ver os próprios pendentes, nem lista de
+recomendações em aberto pro Gerente):
+- **Aprovações virou compartilhada** — antes só carregava/renderizava pra `ehGerenteCampo`; agora
+  todo mundo entra, mas a query e a UI mudam por papel: Gerente vê tudo pendente na fazenda,
+  Aprovar/Rejeitar/Editar; Operador vê só o que ele mesmo lançou (`.eq("lancado_por_perfil_id",
+  perfilId)` nas 5 queries), só Editar, sem aprovar nada. Rótulo na barra lateral também muda:
+  "Aprovações" (Gerente) vs "Meus Lançamentos" (Operador) — mesma rota (`/aprovacoes`), mesmo
+  componente (`app/(campo)/aprovacoes/page.tsx`).
+- **Recomendações (nova, `/recomendacoes`)** — lista, só Gerente Campo, de recomendações com tarefa
+  ainda aberta (mesma query de `tarefas` que a tela Tarefas do Operador já fazia, só que sem
+  filtrar por `perfil_atribuido_id` e sim por fazendas acessíveis). Link do nav só aparece pra
+  Gerente (`NAV_ITEM_RECOMENDACOES` em `CampoShell.tsx`).
+
+**Escopo da edição, deliberadamente restrito** (não é paridade total com a tela de criação):
+- Recomendação: só produtos/doses, data indicada, máquina, observações. Fazenda/ciclo/talhões/
+  operador ficam fixos — mudar isso mexeria nos talhões já linkados e na tarefa já gerada; se
+  precisar, cancela (rejeita a tarefa) e cria outra. `EditarRecomendacao` (componente único,
+  `app/(campo)/recomendacoes/_shared/EditarRecomendacao.tsx`) serve os 4 tipos via um descritor
+  `CampoDoseConfig` (dose com unidade selecionável pra plantio/pulverização; dose fixa em kg/ha pra
+  adubação; dose fixa em ton/ha + PRNT pra corretivo) — os 4 `[id]/editar/page.tsx` são só um
+  wrapper de ~20 linhas passando a config certa. `atualizarRecomendacao` (novo em
+  `lib/recomendacoes/executores.ts`, ao lado do `criarRecomendacao` já existente) faz
+  delete-e-recria nos produtos (mais simples que diff item a item numa lista de 1-3 produtos) e
+  update no cabeçalho.
+- Lançamento (aplicação): dose por produto (recalcula a quantidade total — `dose × área`, mesmo
+  cálculo do fechamento original, pra não quebrar o estorno de estoque que `lib/db.ts` do Arato
+  principal já depende — ver "Correção de cascata" abaixo), data, máquina, observações. Uma rota
+  só (`app/(campo)/aprovacoes/editar/[tabela]/[id]/page.tsx`) cobre os 5 tipos com `if/else` por
+  `tabela` — não achei justificativa pra um componente compartilhado aqui como o de recomendação,
+  porque abastecimento não tem itens e tem campos totalmente diferentes (litros/bomba/combustível).
+  Escreve direto do client (sem rota cross-app) porque status `pendente` não bloqueia consumo de
+  estoque nenhum ainda — só ao aprovar. Todo `.update()` inclui `.eq("status_campo", "pendente")`
+  como trava extra contra corrida com uma aprovação simultânea.
+
+**Débito técnico conhecido, não deste achado mas relevante aqui:** as tabelas operacionais
+(`plantios`/`pulverizacoes`/`adubacoes_base`/`correcoes_solo`/`abastecimentos`) ainda só têm a
+policy de emergência `using (true)` no RLS (ver pendência de segurança na seção 5) — os novos
+`.update()` client-side desta função dependem do mesmo modelo de confiança de aplicação (filtro na
+query, não RLS de verdade) que o resto do app já usa pra INSERT nessas tabelas; não é uma categoria
+de risco nova, só estende o que já existia pra UPDATE também.
+
 ### Sessão de 17 de setembro de 2026 — gestão de operador vira self-service
 
 O dono testou `/admin/campo` (Raccolto) recém-construído e apontou um problema de arquitetura, não

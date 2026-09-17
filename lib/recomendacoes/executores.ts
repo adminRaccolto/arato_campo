@@ -3,7 +3,7 @@ import type { createClient } from "@/lib/supabase/client";
 type SupabaseCliente = ReturnType<typeof createClient>;
 type ResultadoExecucao = { ok: boolean; erro?: string };
 
-type ConfigRecomendacao = {
+export type ConfigRecomendacao = {
   tabela: string;
   tabelaTalhoes: string;
   tabelaProdutos: string;
@@ -107,5 +107,61 @@ export async function criarRecomendacao(
 
   const erro = resTalhoes.error ?? resProdutos.error ?? resTarefa.error;
   if (erro) return { ok: false, erro: erro.message };
+  return { ok: true };
+}
+
+export type PayloadEdicaoRecomendacao = {
+  recomendacaoId: string;
+  // Só os campos que a tela de edição deixa mudar (produtos, data indicada,
+  // máquina, observações) — nunca fazenda/ciclo/talhões, que definem o
+  // escopo já usado pra gerar a tarefa (CLAUDE.md 7, decisão 17/set/2026:
+  // edição fica focada no que costuma precisar de correção, não replica
+  // 100% da tela de criação).
+  header: Record<string, unknown>;
+  // Substitui a lista inteira de produtos (delete + insert) — mais simples
+  // e seguro que diff item a item pra uma lista curta (1-3 produtos).
+  produtos: Record<string, unknown>[];
+};
+
+/**
+ * Edita uma recomendação já criada — só enquanto a tarefa dela ainda não
+ * fechou (`tarefas.status` pendente/em_andamento; a tela de edição confere
+ * isso antes de chamar). Não mexe em talhões nem gera tarefa nova.
+ */
+export async function atualizarRecomendacao(
+  supabase: SupabaseCliente,
+  config: ConfigRecomendacao,
+  payload: PayloadEdicaoRecomendacao
+): Promise<ResultadoExecucao> {
+  // `any` deliberado — mesma razão de `finalizarTarefa` em
+  // lib/tarefas/executores.ts: o nome da tabela só é conhecido em runtime
+  // (`config.tabela`/`config.tabelaProdutos`), incompatível com a união
+  // literal que supabase-js exige; `ReturnType<typeof supabase.from>`
+  // resolve pra UMA tabela fixa do schema gerado e quebra em `.eq()`.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as unknown as { from: (table: string) => any };
+
+  const { error: erroHeader } = await sb
+    .from(config.tabela)
+    .update(payload.header as never)
+    .eq("id", payload.recomendacaoId);
+  if (erroHeader) return { ok: false, erro: erroHeader.message };
+
+  const { error: erroDelete } = await sb
+    .from(config.tabelaProdutos)
+    .delete()
+    .eq("recomendacao_id", payload.recomendacaoId);
+  if (erroDelete) return { ok: false, erro: erroDelete.message };
+
+  if (payload.produtos.length > 0) {
+    const linhas = payload.produtos.map((p) => ({
+      id: crypto.randomUUID(),
+      recomendacao_id: payload.recomendacaoId,
+      ...p,
+    }));
+    const { error: erroInsert } = await sb.from(config.tabelaProdutos).insert(linhas as never);
+    if (erroInsert) return { ok: false, erro: erroInsert.message };
+  }
+
   return { ok: true };
 }
