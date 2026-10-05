@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "./styles";
 import { MaquinaField } from "./MaquinaField";
+import { LoteSementeSelect } from "./LoteSementeSelect";
 import { atualizarRecomendacao, type ConfigRecomendacao } from "@/lib/recomendacoes/executores";
 
 // Formato de dose varia por tipo: plantio/pulverização deixam escolher a
@@ -54,6 +55,7 @@ export function EditarRecomendacao({
     operadorNome: string;
   } | null>(null);
 
+  const [fazendaIdCtx, setFazendaIdCtx] = useState("");
   const [insumos, setInsumos] = useState<{ id: string; nome: string }[]>([]);
   const [maquinas, setMaquinas] = useState<{ id: string; nome: string; tipo: string | null }[]>([]);
   const [maquinaId, setMaquinaId] = useState("");
@@ -118,6 +120,7 @@ export function EditarRecomendacao({
       ).filter(Boolean);
       const hectares = ((talhoesRows ?? []) as unknown as TalhaoJoin[]).reduce((s, t) => s + (t.area_ha ?? 0), 0);
 
+      setFazendaIdCtx(r.fazenda_id as string);
       setContexto({
         fazendaNome: fazenda?.nome ?? "Fazenda",
         talhoes: talhoesNomes.join(", "),
@@ -310,7 +313,12 @@ export function EditarRecomendacao({
               </div>
 
               {campoDose.modo === "selecionavel" && campoDose.campoLote && (
-                <input type="text" placeholder="Lote (opcional)" style={inputStyle} value={produto.extra} onChange={(e) => atualizarProduto(produto.chave, "extra", e.target.value)} />
+                <LoteSementeSelect
+                  fazendaId={fazendaIdCtx}
+                  insumoId={produto.insumoId}
+                  value={produto.extra}
+                  onChange={(lote) => atualizarProduto(produto.chave, "extra", lote)}
+                />
               )}
               {campoDose.modo === "fixa" && campoDose.campoExtra && (
                 <input
