@@ -1,13 +1,15 @@
-import type { AnoSafra, Ciclo, Fazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
+import type { Ciclo, Fazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "./styles";
 
+// Sem seletor de "Ano safra" — achado 9/out/2026: existiam `anos_safra`
+// duplicados/malformados no banco de algumas fazendas, e filtrar ciclo por
+// ano_safra_id escondia ciclos reais, cadastrados. Ciclo já carrega direto
+// por fazenda_id (ver use-catalogo-fazenda.ts), então aqui só sobrou
+// Fazenda → Ciclo.
 export function LocalESafraFields({
   fazendas,
   fazendaId,
   setFazendaId,
-  anosSafra,
-  anoSafraId,
-  setAnoSafraId,
   ciclos,
   cicloId,
   setCicloId,
@@ -15,9 +17,6 @@ export function LocalESafraFields({
   fazendas: Fazenda[];
   fazendaId: string;
   setFazendaId: (id: string) => void;
-  anosSafra: AnoSafra[];
-  anoSafraId: string;
-  setAnoSafraId: (id: string) => void;
   ciclos: Ciclo[];
   cicloId: string;
   setCicloId: (id: string) => void;
@@ -32,17 +31,6 @@ export function LocalESafraFields({
           {fazendas.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={labelStyle}>Ano safra</span>
-        <select style={inputStyle} value={anoSafraId} onChange={(e) => setAnoSafraId(e.target.value)}>
-          {anosSafra.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.descricao}
             </option>
           ))}
         </select>

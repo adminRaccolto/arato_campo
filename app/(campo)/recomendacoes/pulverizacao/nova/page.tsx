@@ -71,9 +71,6 @@ function NovaRecomendacaoPulverizacaoForm() {
     fazendas,
     fazendaId,
     setFazendaId,
-    anosSafra,
-    anoSafraId,
-    setAnoSafraId,
     ciclos,
     cicloId,
     setCicloId,
@@ -293,9 +290,6 @@ function NovaRecomendacaoPulverizacaoForm() {
           fazendas={fazendas}
           fazendaId={fazendaId}
           setFazendaId={setFazendaId}
-          anosSafra={anosSafra}
-          anoSafraId={anoSafraId}
-          setAnoSafraId={setAnoSafraId}
           ciclos={ciclos}
           cicloId={cicloId}
           setCicloId={setCicloId}

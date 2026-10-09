@@ -126,8 +126,17 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fazendaId, auth.contaId, categoriasKey]);
 
+  // Carrega TODOS os ciclos da fazenda, sem filtrar por ano_safra_id — achado
+  // 9/out/2026: várias fazendas têm `anos_safra` duplicados/malformados no
+  // banco (mais de um registro "Safra 2026/2027" com datas diferentes pra
+  // mesma fazenda), e o auto-seletor de ano safra ativo (`escolherAtivoPorData`
+  // em cima de `anosSafra`) às vezes não batia com NENHUM desses registros —
+  // aí o filtro por `ano_safra_id` escondia ciclos de verdade, cadastrados,
+  // de um usuário real. `ciclos` já tem `fazenda_id` próprio (não depende de
+  // `anos_safra` pra isso), então filtrar só por fazenda é mais robusto e
+  // não perde nada — a seleção do ciclo ativo usa a data do próprio ciclo.
   useEffect(() => {
-    if (!fazendaId || !anoSafraId) {
+    if (!fazendaId) {
       setCiclos([]);
       setCicloId("");
       return;
@@ -138,7 +147,6 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
         .from("ciclos")
         .select("id, descricao, cultura, data_inicio, data_fim")
         .eq("fazenda_id", fazendaId)
-        .eq("ano_safra_id", anoSafraId)
         .order("data_inicio", { ascending: false });
 
       const lista = data ?? [];
@@ -149,7 +157,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
 
     carregarCiclos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fazendaId, anoSafraId]);
+  }, [fazendaId]);
 
   return {
     supabase,
