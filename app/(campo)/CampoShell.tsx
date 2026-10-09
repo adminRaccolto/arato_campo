@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/recomendacoes/adubacao/nova", label: "Adubação", icone: "🌿" },
   { href: "/recomendacoes/corretivo/nova", label: "Corretivo", icone: "⚗️" },
   { href: "/abastecimento/nova", label: "Abastecimento", icone: "⛽" },
+  { href: "/avulso", label: "Lançamento Avulso", icone: "🕓" },
 ] as const;
 
 // "Aprovações" aparece pra todo mundo (17/set/2026: Operador também precisa

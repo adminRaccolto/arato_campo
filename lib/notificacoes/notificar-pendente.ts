@@ -2,7 +2,7 @@ import type { createClient } from "@/lib/supabase/client";
 
 type SupabaseCliente = ReturnType<typeof createClient>;
 
-type TabelaPendente = "plantios" | "pulverizacoes" | "adubacoes_base" | "correcoes_solo" | "abastecimentos";
+type TabelaPendente = "plantios" | "pulverizacoes" | "adubacoes_base" | "correcoes_solo" | "abastecimentos" | "colheitas";
 
 // Avisa por WhatsApp (rota cross-app no Arato principal, que tem a
 // EVOLUTION_API_KEY — o App Campo nunca tem essa chave, CLAUDE.md 3.2) todo

@@ -4,10 +4,12 @@ export function SucessoCriacao({
   pendenteSync,
   onVoltar,
   mensagemWhatsApp,
+  titulo = "Recomendação criada e tarefa atribuída ao operador.",
 }: {
   pendenteSync: boolean;
   onVoltar: () => void;
   mensagemWhatsApp?: string;
+  titulo?: string;
 }) {
   return (
     <main
@@ -38,7 +40,7 @@ export function SucessoCriacao({
         ✓
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--azul-escuro)" }}>
-        Recomendação criada e tarefa atribuída ao operador.
+        {titulo}
       </p>
       {pendenteSync && (
         <p style={{ fontSize: 12, color: "var(--mostarda)", fontWeight: 600 }}>

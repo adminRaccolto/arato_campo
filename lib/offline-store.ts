@@ -23,7 +23,12 @@ export type TipoOperacaoPendente =
   | "fechamento_adubacao"
   | "fechamento_corretivo"
   | "fechamento_plantio"
-  | "abastecimento";
+  | "abastecimento"
+  | "avulso_plantio"
+  | "avulso_pulverizacao"
+  | "avulso_adubacao"
+  | "avulso_corretivo"
+  | "avulso_colheita";
 
 export interface OperacaoPendente {
   id: string; // UUID local (crypto.randomUUID) — mesmo id usado no insert, pra idempotência

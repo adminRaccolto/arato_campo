@@ -238,7 +238,9 @@ Adubação, Corretivo) e "Monitoramento" — que o `app/campo` antigo não tem: 
 direto na tela de operação; aqui, uma recomendação de um Gerente Campo (ou um monitoramento com
 nível alto/crítico) gera uma **Tarefa** atribuída a um Operador, e só a partir dela a tela de
 execução abre. São dois modelos de entrada incompatíveis se coexistirem soltos. **Decisão: o
-modelo de Tarefa vence — não existe lançamento avulso.** Ao portar as telas de operação do
+modelo de Tarefa vence — não existe lançamento avulso** *(revista em 9/out/2026 — ver seção 8,
+"Lançamento Avulso": pra operação que já aconteceu, existe sim um segundo caminho de entrada sem
+tarefa; o modelo de Tarefa continua sendo o padrão pra operação nova)*. Ao portar as telas de operação do
 `app/campo` (linha da tabela acima), adaptar pra **sempre exigir uma `tarefa_id` de origem**
 (recomendação → tarefa → tela de execução preenche o que a tarefa já sabe e completa o resto) —
 nunca abrir a tela de Plantio/Pulverização/etc. como formulário solto sem tarefa vinculada. Isso
@@ -576,6 +578,44 @@ Fazenda/Talhão/Ciclo, que variam por conta) — pra 3-5 opções fixas, é list
 ---
 
 ## 8. HISTÓRICO
+
+### Sessão de 9 de outubro de 2026 — Lançamento Avulso
+
+**Dificuldade estrutural apontada pelo dono:** o modelo de Tarefa (decisão 12/set/2026, seção 2.9 —
+"não existe lançamento avulso") exige recomendação antes de qualquer execução. Numa fazenda sendo
+implantada com a operação já em andamento, isso é inviável: exigiria recomendação retroativa pra
+tudo que já aconteceu. Solução: um segundo caminho de entrada, só pra isso — **"Lançamento Avulso"**
+— sem substituir o modelo de Tarefa pro fluxo normal (recomendação → tarefa → fechamento continua
+sendo o padrão pra operação nova; avulso é só a válvula de escape pro que já ocorreu).
+
+**O que é:** uma tela por tipo de operação (`/avulso/{plantio,pulverizacao,adubacao,corretivo,colheita}/nova`,
+mais um índice `/avulso`) onde o usuário registra direto o que já aconteceu — sem recomendação, sem
+tarefa, um único talhão por lançamento (diferente da recomendação, que pode cobrir vários talhões de
+uma vez). Grava com `status_campo='pendente'`, `origem_lancamento='app_campo'`, exatamente como um
+fechamento de tarefa — passa pela mesma aprovação do Gerente Campo antes de consumir estoque/virar
+custo (CLAUDE.md 4.3). `lib/avulso/executores.ts` tem uma função por tipo, espelhando os mesmos
+campos que `lib/tarefas/executores.ts` já grava (inclusive os campos de quantidade total — `quantidade_kg`/
+`total_consumido`/`quantidade_ton` — pra não repetir o bug de estorno já corrigido uma vez).
+
+**Colheita é novidade** — não existia tela nenhuma pra isso neste app ainda. Decisão: avulso de
+colheita grava direto na tabela agregada `colheitas` (a mesma que DRE/BI/Estoque de Grãos já leem,
+com `status_campo` desde sempre), não no romaneio de pesagem de caminhão (`romaneios_entrada`,
+documento fiscal/comercial de pesagem — fora do escopo do operador de campo, CLAUDE.md 3.2). Sem
+produtos/dose — só produto (puxado do ciclo), variedade, total em sacas (60kg), produtividade
+calculada. Na aprovação não consome insumo nenhum (é saída de grão, não entrada de defensivo) — só
+precisa do flip de status, que já é genérico na rota.
+
+**Mudanças no Arato principal** (`agrofield`) pra isso funcionar: `app/api/campo/aprovar-lancamento`
+e `app/api/campo/notificar-pendente` passaram a aceitar `"colheitas"` como tabela válida.
+
+**Aprovações ganhou colheitas**: sem isso, uma colheita avulsa ficaria pendente pra sempre — ninguém
+teria como ver nem aprovar. A tela de edição (`/aprovacoes/editar/[tabela]/[id]`) também ganhou um
+branch pra colheitas (variedade, total de sacas — sem dose/máquina, que não se aplicam a esse tipo).
+
+**Escopo deliberadamente fora:** não existe edição de avulso depois de criado além do que a tela de
+Aprovações já cobre (igual a qualquer lançamento normal) — e colheita avulsa não tem contrapartida
+de romaneio/pesagem de caminhão, só o registro agregado. Se um dia precisar do fluxo fiscal completo
+de romaneio pelo campo, é trabalho novo, não uma extensão natural disso.
 
 ### Sessão de 17 de setembro de 2026 (2) — edição de recomendação/lançamento pendente
 

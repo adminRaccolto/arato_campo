@@ -20,6 +20,18 @@ import {
 } from "@/lib/tarefas/executores";
 import { executarMonitoramento, type PayloadMonitoramento } from "@/lib/monitoramento/executor";
 import { executarAbastecimento, type PayloadAbastecimento } from "@/lib/abastecimento/executor";
+import {
+  executarAvulsoPlantio,
+  executarAvulsoPulverizacao,
+  executarAvulsoAdubacao,
+  executarAvulsoCorretivo,
+  executarAvulsoColheita,
+  type PayloadAvulsoPlantio,
+  type PayloadAvulsoPulverizacao,
+  type PayloadAvulsoAdubacao,
+  type PayloadAvulsoCorretivo,
+  type PayloadAvulsoColheita,
+} from "@/lib/avulso/executores";
 
 /**
  * Reexecuta uma operação da fila local, despachando pro executor certo
@@ -50,5 +62,15 @@ export async function despacharOperacao(op: OperacaoPendente): Promise<{ ok: boo
       return executarMonitoramento(supabase, op.payload as unknown as PayloadMonitoramento);
     case "abastecimento":
       return executarAbastecimento(supabase, op.payload as unknown as PayloadAbastecimento);
+    case "avulso_plantio":
+      return executarAvulsoPlantio(supabase, op.payload as unknown as PayloadAvulsoPlantio);
+    case "avulso_pulverizacao":
+      return executarAvulsoPulverizacao(supabase, op.payload as unknown as PayloadAvulsoPulverizacao);
+    case "avulso_adubacao":
+      return executarAvulsoAdubacao(supabase, op.payload as unknown as PayloadAvulsoAdubacao);
+    case "avulso_corretivo":
+      return executarAvulsoCorretivo(supabase, op.payload as unknown as PayloadAvulsoCorretivo);
+    case "avulso_colheita":
+      return executarAvulsoColheita(supabase, op.payload as unknown as PayloadAvulsoColheita);
   }
 }

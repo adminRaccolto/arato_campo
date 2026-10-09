@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { sectionStyle } from "../recomendacoes/_shared/styles";
 
-type TipoOperacao = "plantio" | "pulverizacao" | "adubacao" | "corretivo" | "abastecimento";
+type TipoOperacao = "plantio" | "pulverizacao" | "adubacao" | "corretivo" | "abastecimento" | "colheita";
 
 type ProdutoComparado = { nome: string | null; unidade: string | null; doseAplicada: number | null; doseRecomendada: number | null };
 
@@ -31,6 +31,7 @@ const TIPO_INFO: Record<TipoOperacao, { label: string }> = {
   adubacao: { label: "Adubação" },
   corretivo: { label: "Corretivo" },
   abastecimento: { label: "Abastecimento" },
+  colheita: { label: "Colheita" },
 };
 
 export default function AprovacoesPage() {
@@ -118,16 +119,24 @@ export default function AprovacoesPage() {
         .eq("status_campo", "pendente");
       if (somenteProprio) queryAbastecimentos = queryAbastecimentos.eq("lancado_por_perfil_id", meuPerfilId);
 
-      const [plantiosRes, pulverizacoesRes, adubacoesRes, correcoesRes, abastecimentosRes] = await Promise.all([
+      let queryColheitas = supabase
+        .from("colheitas")
+        .select("id, fazenda_id, area_ha, data_colheita, produto, variedade, total_sacas, lancado_por_perfil_id, talhoes(nome)")
+        .in("fazenda_id", fazendaIds)
+        .eq("status_campo", "pendente");
+      if (somenteProprio) queryColheitas = queryColheitas.eq("lancado_por_perfil_id", meuPerfilId);
+
+      const [plantiosRes, pulverizacoesRes, adubacoesRes, correcoesRes, abastecimentosRes, colheitasRes] = await Promise.all([
         queryPlantios,
         queryPulverizacoes,
         queryAdubacoes,
         queryCorrecoes,
         queryAbastecimentos,
+        queryColheitas,
       ]);
 
       const erroConsulta =
-        plantiosRes.error ?? pulverizacoesRes.error ?? adubacoesRes.error ?? correcoesRes.error ?? abastecimentosRes.error;
+        plantiosRes.error ?? pulverizacoesRes.error ?? adubacoesRes.error ?? correcoesRes.error ?? abastecimentosRes.error ?? colheitasRes.error;
       if (erroConsulta) {
         setErro(`Não foi possível carregar pendências: ${erroConsulta.message}.`);
         setCarregando(false);
@@ -283,6 +292,31 @@ export default function AprovacoesPage() {
               doseAplicada: x.quantidade_l,
               doseRecomendada: null,
             },
+          ],
+        })),
+        ...((colheitasRes.data ?? []) as unknown as {
+          id: string;
+          fazenda_id: string;
+          area_ha: number | null;
+          data_colheita: string;
+          produto: string;
+          variedade: string | null;
+          total_sacas: number;
+          lancado_por_perfil_id: string | null;
+          talhoes: { nome: string } | { nome: string }[] | null;
+        }[]).map((x) => ({
+          id: x.id,
+          tabela: "colheitas",
+          tipo: "colheita" as const,
+          fazendaId: x.fazenda_id,
+          talhaoNome: Array.isArray(x.talhoes) ? (x.talhoes[0]?.nome ?? null) : (x.talhoes?.nome ?? null),
+          areaHa: x.area_ha,
+          data: x.data_colheita,
+          detalhe: `${x.produto}${x.variedade ? ` — ${x.variedade}` : ""}`,
+          lancadoPorPerfilId: x.lancado_por_perfil_id,
+          maquinaId: null,
+          produtos: [
+            { nome: x.produto, unidade: "sc", doseAplicada: x.total_sacas, doseRecomendada: null },
           ],
         })),
       ].sort((a, b) => (a.data ?? "").localeCompare(b.data ?? ""));

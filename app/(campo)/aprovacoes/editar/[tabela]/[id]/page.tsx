@@ -7,8 +7,8 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "@/app/(campo)/recomendacoes/_shared/styles";
 import { MaquinaField } from "@/app/(campo)/recomendacoes/_shared/MaquinaField";
 
-type Tabela = "plantios" | "pulverizacoes" | "adubacoes_base" | "correcoes_solo" | "abastecimentos";
-const TABELAS_VALIDAS: Tabela[] = ["plantios", "pulverizacoes", "adubacoes_base", "correcoes_solo", "abastecimentos"];
+type Tabela = "plantios" | "pulverizacoes" | "adubacoes_base" | "correcoes_solo" | "abastecimentos" | "colheitas";
+const TABELAS_VALIDAS: Tabela[] = ["plantios", "pulverizacoes", "adubacoes_base", "correcoes_solo", "abastecimentos", "colheitas"];
 
 type ItemDose = { id: string; nome: string; dose: string };
 
@@ -50,6 +50,10 @@ export default function EditarAplicacaoPage() {
   const [quantidadeL, setQuantidadeL] = useState("");
   const [horimetro, setHorimetro] = useState("");
   const [km, setKm] = useState("");
+
+  // colheitas
+  const [variedadeColheita, setVariedadeColheita] = useState("");
+  const [totalSacas, setTotalSacas] = useState("");
 
   useEffect(() => {
     if (auth.carregando || !id) return;
@@ -108,6 +112,10 @@ export default function EditarAplicacaoPage() {
         setData((l.data_aplicacao as string) ?? "");
         const { data: itensData } = await supabase.from("correcoes_solo_itens").select("id, produto_nome, dose_ton_ha").eq("correcao_id", id);
         setItens((itensData ?? []).map((i) => ({ id: i.id, nome: i.produto_nome ?? "Produto", dose: String(i.dose_ton_ha ?? "") })));
+      } else if (tabela === "colheitas") {
+        setData((l.data_colheita as string) ?? "");
+        setVariedadeColheita((l.variedade as string) ?? "");
+        setTotalSacas(String(l.total_sacas ?? ""));
       } else {
         setData((l.data as string) ?? "");
         setBombaId((l.bomba_id as string) ?? "");
@@ -196,6 +204,21 @@ export default function EditarAplicacaoPage() {
           if (error) { erroSalvar = error.message; break; }
         }
       }
+    } else if (tabela === "colheitas") {
+      const sacas = Number(totalSacas);
+      const { error } = await sb
+        .from("colheitas")
+        .update({
+          data_colheita: data,
+          variedade: variedadeColheita || null,
+          total_sacas: sacas,
+          total_kg_classificado: sacas * 60,
+          produtividade_sc_ha: areaHa > 0 ? sacas / areaHa : null,
+          observacao: observacao || null,
+        } as never)
+        .eq("id", id)
+        .eq("status_campo", "pendente");
+      erroSalvar = error?.message ?? null;
     } else {
       if (!insumoId) { setErro("Selecione o combustível (ou uma bomba)."); setSalvando(false); return; }
       const { error } = await sb
@@ -253,7 +276,21 @@ export default function EditarAplicacaoPage() {
       </header>
 
       <form onSubmit={handleSubmit} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, padding: 16 }}>
-        {tabela !== "abastecimentos" && (
+        {tabela === "colheitas" && (
+          <section style={sectionStyle}>
+            <p style={sectionTitleStyle}>Colheita</p>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={labelStyle}>Variedade (opcional)</span>
+              <input type="text" style={inputStyle} value={variedadeColheita} onChange={(e) => setVariedadeColheita(e.target.value)} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={labelStyle}>Total colhido (sacas de 60kg)</span>
+              <input type="number" inputMode="decimal" step="0.01" style={inputStyle} value={totalSacas} onChange={(e) => setTotalSacas(e.target.value)} />
+            </label>
+          </section>
+        )}
+
+        {tabela !== "abastecimentos" && tabela !== "colheitas" && (
           <section style={sectionStyle}>
             <p style={sectionTitleStyle}>Dose aplicada</p>
             {itens.map((item) => (
@@ -303,12 +340,12 @@ export default function EditarAplicacaoPage() {
         )}
 
         <section style={sectionStyle}>
-          <p style={sectionTitleStyle}>Data e máquina</p>
+          <p style={sectionTitleStyle}>{tabela === "colheitas" ? "Data" : "Data e máquina"}</p>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Data</span>
             <input type="date" style={inputStyle} value={data} onChange={(e) => setData(e.target.value)} />
           </label>
-          <MaquinaField maquinas={maquinas} maquinaId={maquinaId} setMaquinaId={setMaquinaId} />
+          {tabela !== "colheitas" && <MaquinaField maquinas={maquinas} maquinaId={maquinaId} setMaquinaId={setMaquinaId} />}
         </section>
 
         <section style={sectionStyle}>
