@@ -9,7 +9,9 @@ const CAMPO_DOSE: CampoDoseConfig = {
   campoUnidade: "unidade_dose",
   unidades: ["L", "mL", "kg", "g"],
 };
-const INSUMOS_CATEGORIA = ["defensivo"];
+// Ver nota em recomendacoes/pulverizacao/nova/page.tsx (achado 9/out/2026) —
+// categorias legadas de dados antigos que deveriam ser "defensivo".
+const INSUMOS_CATEGORIA = ["defensivo", "herbicida", "fungicida", "inseticida", "acaricida", "adjuvante"];
 
 export default function EditarRecomendacaoPulverizacaoPage() {
   return (

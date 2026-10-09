@@ -22,7 +22,12 @@ export default function AvulsoPulverizacaoPage() {
     supabase, perfilId, fazendas, fazendaId, setFazendaId,
     ciclos, cicloId, setCicloId, talhoes, insumos: defensivos, maquinas,
     carregando, erro: erroCarregamento,
-  } = useCatalogoFazenda(["defensivo"]);
+  // "defensivo" é a categoria certa (único valor que o cadastro do Arato
+  // principal oferece hoje) — as outras são resíduo de dados antigos/
+  // importados que ficaram com a categoria do princípio ativo em vez de
+  // "defensivo" (achado 9/out/2026: em algumas fazendas, 100% dos defensivos
+  // reais estão só nessas categorias legadas, deixando o dropdown vazio).
+  } = useCatalogoFazenda(["defensivo", "herbicida", "fungicida", "inseticida", "acaricida", "adjuvante"]);
 
   const [talhaoId, setTalhaoId] = useState("");
   const [tipoAplicacao, setTipoAplicacao] = useState(TIPOS_APLICACAO[0]);
