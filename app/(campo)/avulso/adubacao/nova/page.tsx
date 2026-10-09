@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
+import { useCatalogoFazenda, ehFertilizanteFoliar } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../../recomendacoes/_shared/styles";
 import { MaquinaField } from "../../../recomendacoes/_shared/MaquinaField";
 import { SucessoCriacao } from "../../../recomendacoes/_shared/SucessoCriacao";
@@ -33,6 +33,14 @@ export default function AvulsoAdubacaoPage() {
   const [talhaoId, setTalhaoId] = useState("");
   const [modalidade, setModalidade] = useState<(typeof MODALIDADES)[number]["value"]>("convencional");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([novoProduto()]);
+
+  // Micronutriente/foliar só entra quando a modalidade é foliar — o resto
+  // (adubação de base) nunca mostra produto foliar junto (pedido do dono,
+  // 9/out/2026).
+  const produtosDisponiveis = useMemo(
+    () => fertilizantes.filter((i) => ehFertilizanteFoliar(i.subgrupo) === (modalidade === "foliar")),
+    [fertilizantes, modalidade]
+  );
   const [maquinaId, setMaquinaId] = useState("");
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
   const [observacoes, setObservacoes] = useState("");
@@ -153,7 +161,21 @@ export default function AvulsoAdubacaoPage() {
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Modalidade</span>
-            <select style={inputStyle} value={modalidade} onChange={(e) => setModalidade(e.target.value as typeof modalidade)}>
+            <select
+              style={inputStyle}
+              value={modalidade}
+              onChange={(e) => {
+                const nova = e.target.value as typeof modalidade;
+                setModalidade(nova);
+                setProdutos((atual) =>
+                  atual.map((p) => {
+                    const produto = fertilizantes.find((i) => i.id === p.insumoId);
+                    const aindaValido = !produto || ehFertilizanteFoliar(produto.subgrupo) === (nova === "foliar");
+                    return aindaValido ? p : { ...p, insumoId: "" };
+                  })
+                );
+              }}
+            >
               {MODALIDADES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </label>
@@ -173,7 +195,7 @@ export default function AvulsoAdubacaoPage() {
               </div>
               <select style={inputStyle} value={produto.insumoId} onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}>
                 <option value="">Selecione...</option>
-                {fertilizantes.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
+                {produtosDisponiveis.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
               </select>
               <input
                 type="number" inputMode="decimal" step="0.0001" placeholder="Dose (kg/ha)"

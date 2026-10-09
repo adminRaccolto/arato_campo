@@ -579,6 +579,40 @@ Fazenda/Talhão/Ciclo, que variam por conta) — pra 3-5 opções fixas, é list
 
 ## 8. HISTÓRICO
 
+### Sessão de 9 de outubro de 2026 (3) — insumo de fertilizante: foliar × base
+
+Dois achados na mesma sessão da seção de Lançamento Avulso, ambos no cadastro de insumos do Arato
+principal:
+
+**Pulverização com dropdown vazio** — não era bug de carregamento, era categorização. O cadastro
+do Arato principal só grava `categoria='defensivo'` pra esse grupo, mas 33 insumos antigos ficaram
+com a categoria do princípio ativo (`herbicida`/`fungicida`/`inseticida`/`acaricida`/`adjuvante`)
+em vez de `defensivo`. Em algumas fazendas (São Pedro, Oasis), **100%** dos defensivos reais
+estavam só nessas categorias — dropdown vazio. Corrigido ampliando o filtro de insumo da tela de
+Pulverização (criar, editar, avulso) pra incluir essas categorias legadas também.
+
+**Corretivo também vazio, causa diferente** — nenhum insumo no banco tinha `categoria='corretivo'`
+(opção que o cadastro oferece, "Corretivos de Solo", só nunca foi usada) — calcário/gesso estavam
+todos cadastrados como `fertilizante`. Resolvido com dado, não código: `db/migrations-draft/
+014_recategoriza_insumos_corretivo.sql` move 18 insumos (por `id` explícito, revisados um a um com
+o dono) de `fertilizante`/`outros` pra `categoria='corretivo'`.
+
+**Adubação foliar × de base, dentro do mesmo `categoria='fertilizante'`** — pedido do dono ao ver a
+lista de subgrupos: "Micronutrientes e Foliar são Fertilizantes, mas na operação adubação foliar —
+os outros são adubação de base". `fertilizante` cobre produto de natureza bem diferente (114
+Micronutrientes, 55 Foliar, 39 Adubação de Base, etc., por `subgrupo` livre-texto) — hoje a tela de
+Adubação mostra tudo junto, sem separar por modalidade. Resolvido **sem mexer no banco** (evita
+reescrever um campo que o cadastro do Arato principal também exibe, com risco de perder rótulo que
+alguma fazenda escolheu de propósito): `ehFertilizanteFoliar()` (novo, `use-catalogo-fazenda.ts`)
+classifica em runtime por palavra no `subgrupo` (`foliar`/`micronutriente`, case-insensitive) — o
+dropdown de produto na tela de Adubação (criar e avulso) agora filtra pela modalidade escolhida:
+`foliar` mostra só produto foliar/micronutriente, qualquer outra modalidade mostra o resto. Trocar
+a modalidade limpa produto já escolhido que não bate mais com a lista nova, pra não deixar seleção
+fantasma. **Não entrou na tela de editar recomendação** (`EditarRecomendacao.tsx`) — lá a modalidade
+não é editável (escopo deliberadamente restrito, ver seção 8 "edição de recomendação/lançamento
+pendente"), então não tem como saber qual filtro aplicar sem expandir esse escopo; mostra todos os
+fertilizantes juntos, igual sempre mostrou.
+
 ### Sessão de 9 de outubro de 2026 — Lançamento Avulso
 
 **Dificuldade estrutural apontada pelo dono:** o modelo de Tarefa (decisão 12/set/2026, seção 2.9 —

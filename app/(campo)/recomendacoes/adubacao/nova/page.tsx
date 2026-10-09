@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
+import { useCatalogoFazenda, ehFertilizanteFoliar } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { TalhoesSelector } from "../../_shared/TalhoesSelector";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../_shared/styles";
 import { enfileirarEExecutar } from "@/lib/offline-store";
@@ -56,6 +56,14 @@ export default function NovaRecomendacaoAdubacaoPage() {
 
   const [modalidade, setModalidade] = useState<(typeof MODALIDADES)[number]["value"]>("convencional");
   const [profundidadeAplicacaoCm, setProfundidadeAplicacaoCm] = useState("");
+
+  // Micronutriente/foliar só entra quando a modalidade é foliar — o resto
+  // (adubação de base) nunca mostra produto foliar junto (pedido do dono,
+  // 9/out/2026).
+  const produtosDisponiveis = useMemo(
+    () => fertilizantes.filter((i) => ehFertilizanteFoliar(i.subgrupo) === (modalidade === "foliar")),
+    [fertilizantes, modalidade]
+  );
 
   const [dataAplicacaoIndicada, setDataAplicacaoIndicada] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -254,7 +262,7 @@ export default function NovaRecomendacaoAdubacaoPage() {
                 onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}
               >
                 <option value="">Selecione o fertilizante...</option>
-                {fertilizantes.map((i) => (
+                {produtosDisponiveis.map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.nome}
                   </option>
@@ -295,7 +303,24 @@ export default function NovaRecomendacaoAdubacaoPage() {
 
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Modalidade de aplicação</span>
-            <select style={inputStyle} value={modalidade} onChange={(e) => setModalidade(e.target.value as typeof modalidade)}>
+            <select
+              style={inputStyle}
+              value={modalidade}
+              onChange={(e) => {
+                const nova = e.target.value as typeof modalidade;
+                setModalidade(nova);
+                // Produto já escolhido pode não valer mais pra nova
+                // modalidade (foliar × base são listas diferentes) — limpa
+                // pra evitar ficar com um produto fora da lista visível.
+                setProdutos((atual) =>
+                  atual.map((p) => {
+                    const produto = fertilizantes.find((i) => i.id === p.insumoId);
+                    const aindaValido = !produto || ehFertilizanteFoliar(produto.subgrupo) === (nova === "foliar");
+                    return aindaValido ? p : { ...p, insumoId: "" };
+                  })
+                );
+              }}
+            >
               {MODALIDADES.map((m) => (
                 <option key={m.value} value={m.value}>
                   {m.label}

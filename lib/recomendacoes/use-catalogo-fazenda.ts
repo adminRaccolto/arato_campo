@@ -6,9 +6,24 @@ export type Fazenda = { id: string; nome: string };
 export type AnoSafra = { id: string; descricao: string; data_inicio: string; data_fim: string };
 export type Ciclo = { id: string; descricao: string; cultura: string; data_inicio: string; data_fim: string };
 export type Talhao = { id: string; nome: string; area_ha: number; kml_url: string | null };
-export type Insumo = { id: string; nome: string; unidade: string };
+export type Insumo = { id: string; nome: string; unidade: string; subgrupo: string | null };
 export type Perfil = { id: string; nome: string | null };
 export type Maquina = { id: string; nome: string; tipo: string | null };
+
+// Dentro de categoria='fertilizante' tem produto de adubação foliar
+// (micronutriente líquido/foliar) misturado com adubação de base — não dá
+// pra separar por categoria nova sem mexer no cadastro do Arato principal,
+// então separa pelo `subgrupo` que o cadastro já grava (achado 9/out/2026,
+// pedido do dono: "Micronutrientes e Foliar são Fertilizantes, mas na
+// operação adubação foliar — os outros são adubação de base"). Usado pra
+// filtrar o dropdown de produto conforme a modalidade escolhida na tela de
+// Adubação — não reescreve o subgrupo no banco, só classifica em runtime.
+const SUBGRUPOS_FOLIAR = ["foliar", "micronutriente"];
+export function ehFertilizanteFoliar(subgrupo: string | null): boolean {
+  if (!subgrupo) return false;
+  const s = subgrupo.toLowerCase();
+  return SUBGRUPOS_FOLIAR.some((termo) => s.includes(termo));
+}
 
 export function escolherAtivoPorData<T extends { data_inicio: string; data_fim: string }>(
   itens: T[]
@@ -92,7 +107,7 @@ export function useCatalogoFazenda(categoriasInsumo: string[]) {
     async function carregarCatalogoFazenda(contaIdParam: string) {
       let insumosQuery = supabase
         .from("insumos")
-        .select("id, nome, unidade")
+        .select("id, nome, unidade, subgrupo")
         .eq("fazenda_id", fazendaId)
         .order("nome");
       if (categoriasKey) {
