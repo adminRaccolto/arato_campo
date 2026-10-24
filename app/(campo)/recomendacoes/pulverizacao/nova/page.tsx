@@ -76,17 +76,14 @@ function NovaRecomendacaoPulverizacaoForm() {
     cicloId,
     setCicloId,
     talhoes,
-    insumos: insumosDefensivos,
+    insumos,
     perfis,
     maquinas,
     carregando,
     erro: erroCarregamento,
-  // "defensivo" é a categoria certa (único valor que o cadastro do Arato
-  // principal oferece hoje) — as outras são resíduo de dados antigos/
-  // importados que ficaram com a categoria do princípio ativo em vez de
-  // "defensivo" (achado 9/out/2026: em algumas fazendas, 100% dos defensivos
-  // reais estão só nessas categorias legadas, deixando o dropdown vazio).
-  } = useCatalogoFazenda(["defensivo", "herbicida", "fungicida", "inseticida", "acaricida", "adjuvante"]);
+  // Sem filtro de categoria — o seletor de Tipo de Aplicação é só pra registrar a
+  // operação, não pra restringir qual insumo pode ser escolhido (pedido 24/out/2026).
+  } = useCatalogoFazenda([]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");
@@ -259,7 +256,7 @@ function NovaRecomendacaoPulverizacaoForm() {
     const nomesTalhoes = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id)).map((t) => t.nome);
     const linhasProdutos = produtos
       .filter((p) => p.insumoId && p.dosePorHa)
-      .map((p) => `• ${insumosDefensivos.find((i) => i.id === p.insumoId)?.nome ?? "Produto"} — ${p.dosePorHa} ${p.unidadeDose}/ha`);
+      .map((p) => `• ${insumos.find((i) => i.id === p.insumoId)?.nome ?? "Produto"} — ${p.dosePorHa} ${p.unidadeDose}/ha`);
     const mensagem = [
       `🌾 *Recomendação de Pulverização* — ${fazendaNome}`,
       `Talhões: ${nomesTalhoes.join(", ")} (${hectaresSugeridos.toFixed(1)} ha)`,
@@ -346,7 +343,7 @@ function NovaRecomendacaoPulverizacaoForm() {
               </div>
 
               <InsumoSelect
-                insumos={insumosDefensivos}
+                insumos={insumos}
                 value={produto.insumoId}
                 onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
                 placeholder="Selecione o defensivo..."

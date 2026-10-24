@@ -29,15 +29,10 @@ export function EditarRecomendacao({
   tipo,
   config,
   campoDose,
-  insumosCategoria,
 }: {
   tipo: string;
   config: ConfigRecomendacao;
   campoDose: CampoDoseConfig;
-  // filtro de categoria pro catálogo de insumos (ex: ["defensivo"] pra
-  // pulverização) — carregado à parte aqui porque a tela de edição não
-  // precisa do resto do catálogo (fazenda/ciclo/talhões, já fixos).
-  insumosCategoria: string[];
 }) {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -108,7 +103,9 @@ export function EditarRecomendacao({
         await Promise.all([
           supabase.from("fazendas").select("nome").eq("id", r.fazenda_id as string).maybeSingle(),
           sb.from(config.tabelaTalhoes).select("area_ha, talhoes(nome)").eq("recomendacao_id", r.id as string),
-          supabase.from("insumos").select("id, nome").eq("fazenda_id", r.fazenda_id as string).in("categoria", insumosCategoria),
+          // Sem filtro de categoria — o seletor de operação (tipo) serve pra registrar a
+          // operação, não pra restringir qual insumo pode ser escolhido (pedido 24/out/2026).
+          supabase.from("insumos").select("id, nome").eq("fazenda_id", r.fazenda_id as string),
           supabase.from("maquinas").select("id, nome, tipo").eq("fazenda_id", r.fazenda_id as string).eq("ativa", true),
           tarefa.perfil_atribuido_id
             ? supabase.from("perfis").select("nome").eq("id", tarefa.perfil_atribuido_id).maybeSingle()
@@ -151,7 +148,7 @@ export function EditarRecomendacao({
     }
 
     carregar();
-    // `config`/`campoDose`/`insumosCategoria` ficam de fora de propósito —
+    // `config`/`campoDose` ficam de fora de propósito —
     // são literais recriados a cada render pelo componente-pai (um por
     // tipo), incluí-los aqui causaria refetch em loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps

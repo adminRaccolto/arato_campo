@@ -10,15 +10,12 @@ const CAMPO_DOSE: CampoDoseConfig = {
   unidades: ["kg", "g", "L", "mL"],
   campoLote: "lote",
 };
-const INSUMOS_CATEGORIA = ["semente", "inoculante"];
-
 export default function EditarRecomendacaoPlantioPage() {
   return (
     <EditarRecomendacao
       tipo="Plantio"
       config={CONFIG_PLANTIO}
       campoDose={CAMPO_DOSE}
-      insumosCategoria={INSUMOS_CATEGORIA}
     />
   );
 }

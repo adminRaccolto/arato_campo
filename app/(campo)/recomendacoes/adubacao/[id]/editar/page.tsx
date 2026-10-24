@@ -8,15 +8,12 @@ const CAMPO_DOSE: CampoDoseConfig = {
   campoDose: "dose_kg_ha",
   unidadeLabel: "kg/ha",
 };
-const INSUMOS_CATEGORIA = ["fertilizante", "micronutriente"];
-
 export default function EditarRecomendacaoAdubacaoPage() {
   return (
     <EditarRecomendacao
       tipo="Adubação"
       config={CONFIG_ADUBACAO}
       campoDose={CAMPO_DOSE}
-      insumosCategoria={INSUMOS_CATEGORIA}
     />
   );
 }

@@ -29,7 +29,8 @@ export default function AvulsoCorretivoPage() {
     supabase, perfilId, fazendas, fazendaId, setFazendaId,
     ciclos, cicloId, setCicloId, talhoes, insumos: corretivos, maquinas,
     carregando, erro: erroCarregamento,
-  } = useCatalogoFazenda(["corretivo"]);
+  // Sem filtro de categoria — pedido 24/out/2026.
+  } = useCatalogoFazenda([]);
 
   const [talhaoId, setTalhaoId] = useState("");
   const [finalidade, setFinalidade] = useState<(typeof FINALIDADES)[number]["value"]>("calcario");

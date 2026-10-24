@@ -49,7 +49,9 @@ export default function NovaRecomendacaoCorretivoPage() {
     maquinas,
     carregando,
     erro: erroCarregamento,
-  } = useCatalogoFazenda(["corretivo"]);
+  // Sem filtro de categoria — o seletor de Finalidade é só pra registrar a
+  // operação, não pra restringir qual insumo pode ser escolhido (pedido 24/out/2026).
+  } = useCatalogoFazenda([]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");

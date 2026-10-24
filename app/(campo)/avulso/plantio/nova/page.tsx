@@ -17,7 +17,8 @@ export default function AvulsoPlantioPage() {
     supabase, perfilId, fazendas, fazendaId, setFazendaId,
     ciclos, cicloId, setCicloId, talhoes, insumos: sementes, maquinas,
     carregando, erro: erroCarregamento,
-  } = useCatalogoFazenda(["semente", "inoculante"]);
+  // Sem filtro de categoria — pedido 24/out/2026.
+  } = useCatalogoFazenda([]);
 
   const [talhaoId, setTalhaoId] = useState("");
   const [insumoId, setInsumoId] = useState("");

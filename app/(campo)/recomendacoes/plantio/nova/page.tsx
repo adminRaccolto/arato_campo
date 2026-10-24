@@ -43,7 +43,8 @@ export default function NovaRecomendacaoPlantioPage() {
     maquinas,
     carregando,
     erro: erroCarregamento,
-  } = useCatalogoFazenda(["semente", "inoculante"]);
+  // Sem filtro de categoria — pedido 24/out/2026.
+  } = useCatalogoFazenda([]);
 
   const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [operadorPerfilId, setOperadorPerfilId] = useState("");

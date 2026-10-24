@@ -9,15 +9,12 @@ const CAMPO_DOSE: CampoDoseConfig = {
   unidadeLabel: "ton/ha",
   campoExtra: { campo: "prnt_pct", label: "PRNT (%)" },
 };
-const INSUMOS_CATEGORIA = ["corretivo"];
-
 export default function EditarRecomendacaoCorretivoPage() {
   return (
     <EditarRecomendacao
       tipo="Corretivo"
       config={CONFIG_CORRETIVO}
       campoDose={CAMPO_DOSE}
-      insumosCategoria={INSUMOS_CATEGORIA}
     />
   );
 }
