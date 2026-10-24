@@ -6,6 +6,7 @@ import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../../recomendacoes/_shared/styles";
 import { MaquinaField } from "../../../recomendacoes/_shared/MaquinaField";
 import { LoteSementeSelect } from "../../../recomendacoes/_shared/LoteSementeSelect";
+import { InsumoSelect } from "../../../recomendacoes/_shared/InsumoSelect";
 import { SucessoCriacao } from "../../../recomendacoes/_shared/SucessoCriacao";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { executarAvulsoPlantio, type PayloadAvulsoPlantio } from "@/lib/avulso/executores";
@@ -137,10 +138,12 @@ export default function AvulsoPlantioPage() {
           <p style={sectionTitleStyle}>Semente</p>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Semente / inoculante</span>
-            <select style={inputStyle} value={insumoId} onChange={(e) => { setInsumoId(e.target.value); setLote(""); }}>
-              <option value="">Selecione...</option>
-              {sementes.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
-            </select>
+            <InsumoSelect
+              insumos={sementes}
+              value={insumoId}
+              onChange={(id) => { setInsumoId(id); setLote(""); }}
+              placeholder="Selecione..."
+            />
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Variedade (se diferente do produto acima)</span>

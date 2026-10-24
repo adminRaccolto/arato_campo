@@ -7,6 +7,7 @@ import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../.
 import { MaquinaField } from "../../../recomendacoes/_shared/MaquinaField";
 import { SucessoCriacao } from "../../../recomendacoes/_shared/SucessoCriacao";
 import { TalhoesSelector } from "../../../recomendacoes/_shared/TalhoesSelector";
+import { InsumoSelect } from "../../../recomendacoes/_shared/InsumoSelect";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { executarAvulsoPulverizacao, type PayloadAvulsoPulverizacao } from "@/lib/avulso/executores";
 
@@ -191,10 +192,12 @@ export default function AvulsoPulverizacaoPage() {
                   </button>
                 )}
               </div>
-              <select style={inputStyle} value={produto.insumoId} onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}>
-                <option value="">Selecione...</option>
-                {defensivos.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
-              </select>
+              <InsumoSelect
+                insumos={defensivos}
+                value={produto.insumoId}
+                onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
+                placeholder="Selecione..."
+              />
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   type="number" inputMode="decimal" step="0.0001" placeholder="Dose por ha"

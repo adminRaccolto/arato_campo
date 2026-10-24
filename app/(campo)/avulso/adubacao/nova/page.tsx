@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCatalogoFazenda, ehFertilizanteFoliar } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../../recomendacoes/_shared/styles";
 import { MaquinaField } from "../../../recomendacoes/_shared/MaquinaField";
+import { InsumoSelect } from "../../../recomendacoes/_shared/InsumoSelect";
 import { SucessoCriacao } from "../../../recomendacoes/_shared/SucessoCriacao";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { executarAvulsoAdubacao, type PayloadAvulsoAdubacao } from "@/lib/avulso/executores";
@@ -193,10 +194,12 @@ export default function AvulsoAdubacaoPage() {
                   </button>
                 )}
               </div>
-              <select style={inputStyle} value={produto.insumoId} onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}>
-                <option value="">Selecione...</option>
-                {produtosDisponiveis.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
-              </select>
+              <InsumoSelect
+                insumos={produtosDisponiveis}
+                value={produto.insumoId}
+                onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
+                placeholder="Selecione..."
+              />
               <input
                 type="number" inputMode="decimal" step="0.0001" placeholder="Dose (kg/ha)"
                 style={inputStyle} value={produto.dose} onChange={(e) => atualizarProduto(produto.chave, "dose", e.target.value)}
