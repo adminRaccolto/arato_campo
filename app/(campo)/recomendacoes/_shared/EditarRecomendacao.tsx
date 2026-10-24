@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "./styles";
 import { MaquinaField } from "./MaquinaField";
 import { LoteSementeSelect } from "./LoteSementeSelect";
+import { InsumoSelect } from "./InsumoSelect";
 import { atualizarRecomendacao, type ConfigRecomendacao } from "@/lib/recomendacoes/executores";
 
 // Formato de dose varia por tipo: plantio/pulverização deixam escolher a
@@ -289,10 +290,12 @@ export function EditarRecomendacao({
                 )}
               </div>
 
-              <select style={inputStyle} value={produto.insumoId} onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}>
-                <option value="">Selecione o produto...</option>
-                {insumos.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
-              </select>
+              <InsumoSelect
+                insumos={insumos}
+                value={produto.insumoId}
+                onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
+                placeholder="Selecione o produto..."
+              />
 
               <div style={{ display: "flex", gap: 8 }}>
                 <input

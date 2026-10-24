@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCatalogoFazenda, ehFertilizanteFoliar } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { TalhoesSelector } from "../../_shared/TalhoesSelector";
+import { InsumoSelect } from "../../_shared/InsumoSelect";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../_shared/styles";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { criarRecomendacao, CONFIG_ADUBACAO, type PayloadCriacaoRecomendacao } from "@/lib/recomendacoes/executores";
@@ -256,18 +257,12 @@ export default function NovaRecomendacaoAdubacaoPage() {
                 )}
               </div>
 
-              <select
-                style={inputStyle}
+              <InsumoSelect
+                insumos={produtosDisponiveis}
                 value={produto.insumoId}
-                onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}
-              >
-                <option value="">Selecione o fertilizante...</option>
-                {produtosDisponiveis.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nome}
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
+                placeholder="Selecione o fertilizante..."
+              />
 
               <input
                 type="number"

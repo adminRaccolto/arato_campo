@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { TalhoesSelector } from "../../_shared/TalhoesSelector";
+import { InsumoSelect } from "../../_shared/InsumoSelect";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../_shared/styles";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { criarRecomendacao, CONFIG_PULVERIZACAO, type PayloadCriacaoRecomendacao } from "@/lib/recomendacoes/executores";
@@ -344,18 +345,12 @@ function NovaRecomendacaoPulverizacaoForm() {
                 )}
               </div>
 
-              <select
-                style={inputStyle}
+              <InsumoSelect
+                insumos={insumosDefensivos}
                 value={produto.insumoId}
-                onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}
-              >
-                <option value="">Selecione o defensivo...</option>
-                {insumosDefensivos.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nome}
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
+                placeholder="Selecione o defensivo..."
+              />
 
               <div style={{ display: "flex", gap: 8 }}>
                 <input

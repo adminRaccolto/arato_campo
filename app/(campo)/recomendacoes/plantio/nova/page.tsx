@@ -12,6 +12,7 @@ import { LocalESafraFields } from "../../_shared/LocalESafraFields";
 import { OperadorField } from "../../_shared/OperadorField";
 import { MaquinaField } from "../../_shared/MaquinaField";
 import { LoteSementeSelect } from "../../_shared/LoteSementeSelect";
+import { InsumoSelect } from "../../_shared/InsumoSelect";
 
 type ProdutoItem = {
   chave: string;
@@ -251,21 +252,15 @@ export default function NovaRecomendacaoPlantioPage() {
                 )}
               </div>
 
-              <select
-                style={inputStyle}
+              <InsumoSelect
+                insumos={sementesInoculantes}
                 value={produto.insumoId}
-                onChange={(e) => {
-                  atualizarProduto(produto.chave, "insumoId", e.target.value);
+                onChange={(id) => {
+                  atualizarProduto(produto.chave, "insumoId", id);
                   atualizarProduto(produto.chave, "lote", "");
                 }}
-              >
-                <option value="">Selecione a semente ou inoculante...</option>
-                {sementesInoculantes.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nome}
-                  </option>
-                ))}
-              </select>
+                placeholder="Selecione a semente ou inoculante..."
+              />
 
               <div style={{ display: "flex", gap: 8 }}>
                 <input

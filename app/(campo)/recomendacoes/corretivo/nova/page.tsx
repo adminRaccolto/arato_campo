@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { TalhoesSelector } from "../../_shared/TalhoesSelector";
+import { InsumoSelect } from "../../_shared/InsumoSelect";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../_shared/styles";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { criarRecomendacao, CONFIG_CORRETIVO, type PayloadCriacaoRecomendacao } from "@/lib/recomendacoes/executores";
@@ -280,18 +281,12 @@ export default function NovaRecomendacaoCorretivoPage() {
                 )}
               </div>
 
-              <select
-                style={inputStyle}
+              <InsumoSelect
+                insumos={corretivos}
                 value={produto.insumoId}
-                onChange={(e) => atualizarProduto(produto.chave, "insumoId", e.target.value)}
-              >
-                <option value="">Selecione o corretivo...</option>
-                {corretivos.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nome}
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => atualizarProduto(produto.chave, "insumoId", id)}
+                placeholder="Selecione o corretivo..."
+              />
 
               <input
                 type="number"
