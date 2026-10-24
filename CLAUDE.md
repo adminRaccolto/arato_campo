@@ -579,6 +579,51 @@ Fazenda/Talhão/Ciclo, que variam por conta) — pra 3-5 opções fixas, é list
 
 ## 8. HISTÓRICO
 
+### Sessão de 24 de outubro de 2026 — campo de busca no insumo + pulverização multi-talhão
+
+Três pedidos na mesma sessão:
+
+**1. Busca no seletor de insumo das recomendações** — catálogo de insumo por fazenda tem
+centenas de itens; rolar o dropdown inteiro pra achar um produto não escalava. Componente
+compartilhado `InsumoSelect` (`app/(campo)/recomendacoes/_shared/InsumoSelect.tsx`) adiciona um
+campo de texto acima do `<select>` nativo que filtra por nome (contém, case-insensitive) — a
+opção já selecionada continua aparecendo mesmo se não bater com o texto digitado, pra não perder
+seleção. Usado nas 4 telas de criação de recomendação (plantio, pulverização, adubação,
+corretivo) e na edição (`EditarRecomendacao.tsx`).
+
+**2. Tratamento de Sementes sem campo nenhum disponível (Arato principal, `app/lavoura/
+tratamento-sementes/page.tsx`)** — não era renderização condicional quebrada, era `carregar()`
+fazendo `Promise.all` de 6 chamadas sem `try/catch`: se qualquer uma rejeitasse (RLS, coluna
+renomeada etc.), a `Promise.all` rejeitava inteira sem nenhum `setState`, deixando todos os
+selects do modal só com o placeholder — sem erro visível, parecia tela vazia. Corrigido com
+try/catch + banner de erro visível. Achado colateral no mesmo carregamento: o filtro de insumo
+de produto incluía `"inoculante"` como categoria válida — valor que **nenhuma** tela de cadastro
+de insumo grava de fato (o cadastro real, `app/estoque/page.tsx`, oferece `"biologico"`, rotulado
+"Biológico / Inoculante", pro mesmo tipo de produto). Mesmo bug encontrado (não corrigido nesta
+sessão, fora do pedido) em `app/lavoura/recomendacoes/page.tsx:455`.
+
+**3. Pulverização com múltiplos talhões** — a mesma calda/recomendação costuma valer pra vários
+talhões de uma vez; exigir um lançamento por talhão era redundante. Resolvido diferente em cada
+repo, pelo desenho que já existia em cada um:
+- **Arato principal** (`app/lavoura/pulverizacao/page.tsx`): continua sendo 1 registro em
+  `pulverizacoes` (1 custo total, não rateado), mas agora cobre N talhões via tabela de junção
+  nova `pulverizacao_talhoes` (Seção 366 da migration, mesmo padrão de `recomendacao_talhoes`) —
+  `pulverizacoes.talhao_id` passa a guardar só o primeiro talhão selecionado, por
+  retrocompatibilidade com qualquer leitura existente. UI: checklist de talhões substitui o nível
+  `"talhao"` do `CascadeSelector` (que nunca alimentava a Área automaticamente — esse campo já
+  era digitado à mão antes desta mudança); botão "Usar soma na Área (ha)" preenche a partir dos
+  talhões marcados, sem travar edição manual.
+- **App Campo, Lançamento Avulso** (`app/(campo)/avulso/pulverizacao/nova/page.tsx`): reaproveita
+  o `TalhoesSelector` que a recomendação multi-talhão já usava (CLAUDE.md 2.3/4.6) — mas aqui cada
+  talhão gera sua PRÓPRIA linha em `pulverizacoes`/`pulverizacao_itens` (mesmo padrão já usado em
+  `executarFechamentoPulverizacao`, `lib/tarefas/executores.ts`, pro fechamento de tarefa
+  multi-talhão), com `total_consumido = dose × área daquele talhão` — custo não rateado, cada
+  talhão consome o que de fato gastou na própria área. Arquiteturas diferentes (1 registro + N
+  junção vs. N registros) porque cada repo já tinha um padrão idiomático pronto pra multi-talhão;
+  não foi preciso (nem fazia sentido) unificar os dois modelos.
+- **Não estendido nesta sessão**: avulso de plantio/adubação/corretivo continuam de 1 talhão só —
+  só pulverização foi pedida.
+
 ### Sessão de 9 de outubro de 2026 (3) — insumo de fertilizante: foliar × base
 
 Dois achados na mesma sessão da seção de Lançamento Avulso, ambos no cadastro de insumos do Arato
