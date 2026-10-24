@@ -596,11 +596,17 @@ tratamento-sementes/page.tsx`)** — não era renderização condicional quebrad
 fazendo `Promise.all` de 6 chamadas sem `try/catch`: se qualquer uma rejeitasse (RLS, coluna
 renomeada etc.), a `Promise.all` rejeitava inteira sem nenhum `setState`, deixando todos os
 selects do modal só com o placeholder — sem erro visível, parecia tela vazia. Corrigido com
-try/catch + banner de erro visível. Achado colateral no mesmo carregamento: o filtro de insumo
-de produto incluía `"inoculante"` como categoria válida — valor que **nenhuma** tela de cadastro
-de insumo grava de fato (o cadastro real, `app/estoque/page.tsx`, oferece `"biologico"`, rotulado
-"Biológico / Inoculante", pro mesmo tipo de produto). Mesmo bug encontrado (não corrigido nesta
-sessão, fora do pedido) em `app/lavoura/recomendacoes/page.tsx:455`.
+try/catch + banner de erro visível. **Correção de rumo (24/out, mesma sessão seguinte):** o
+achado colateral original aqui — que `"inoculante"` seria categoria morta e o certo seria
+`"biologico"` — estava **errado**, descoberto só depois ao checar direto no banco: existem 4
+insumos reais com `categoria='inoculante'` (cadastrados via `app/compras/nf`, que oferece essa
+opção), e **zero** com `categoria='biologico'` (a opção que `app/estoque/page.tsx` oferece pro
+mesmo conceito, mas que nunca foi usada na prática). O cadastro de insumo do Arato principal tem
+duas telas diferentes oferecendo rótulos diferentes pro mesmo tipo de produto — um descompasso de
+dados real, não um valor morto. Filtro corrigido pra incluir os dois (`["defensivo", "biologico",
+"inoculante"]`). Mesmo ajuste aplicado em `app/lavoura/recomendacoes/page.tsx`, que também não
+incluía `"corretivo"` (18 insumos reais de calcário/gesso, invisíveis nessa tela desde sempre —
+e mais ainda depois da recategorização fertilizante→corretivo de uma sessão anterior).
 
 **3. Pulverização com múltiplos talhões** — a mesma calda/recomendação costuma valer pra vários
 talhões de uma vez; exigir um lançamento por talhão era redundante. Resolvido diferente em cada
