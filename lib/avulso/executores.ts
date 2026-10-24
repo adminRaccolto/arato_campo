@@ -58,47 +58,76 @@ export async function executarAvulsoPlantio(supabase: SupabaseCliente, p: Payloa
   return { ok: true };
 }
 
-export type PayloadAvulsoPulverizacao = PayloadBase & {
+// Uma pulverização avulsa pode cobrir vários talhões de uma vez — mesma
+// recomendação/calda se aplica a todos (pedido 24/out/2026). Cada talhão
+// gera sua PRÓPRIA linha em `pulverizacoes`/`pulverizacao_itens`, com
+// `total_consumido = dose × área daquele talhão` — o custo não é rateado
+// entre os talhões (cada um consome o que de fato gastou na própria área),
+// mas também não duplica: a soma das linhas individuais já é o total real
+// consumido na operação. `linhas[].id` é gerado no cliente (mesmo padrão de
+// `executarFechamentoPulverizacao` em lib/tarefas/executores.ts) pra manter
+// idempotência em retry de sync.
+export type LinhaAvulsoPulverizacao = { id: string; talhaoId: string; areaHa: number };
+
+export type PayloadAvulsoPulverizacao = {
+  id: string;
+  fazendaId: string;
+  cicloId: string;
+  perfilId: string;
+  maquinaId: string | null;
+  data: string;
+  observacoes: string | null;
   tipoAplicacao: string;
   vazaoLHa: number | null;
   estagioFenologico: string | null;
+  linhas: LinhaAvulsoPulverizacao[];
   produtos: ProdutoAvulso[];
 };
 
 export async function executarAvulsoPulverizacao(supabase: SupabaseCliente, p: PayloadAvulsoPulverizacao): Promise<ResultadoExecucao> {
-  const { error: erroHeader } = await supabase.from("pulverizacoes").upsert({
-    id: p.id,
-    fazenda_id: p.fazendaId,
-    ciclo_id: p.cicloId,
-    talhao_id: p.talhaoId,
-    area_ha: p.areaHa,
-    data_inicio: p.data,
-    tipo: p.tipoAplicacao,
-    vazao_l_ha: p.vazaoLHa,
-    estadio_fenologico: p.estagioFenologico,
-    maquina_id: p.maquinaId,
-    observacao: p.observacoes,
-    status_campo: "pendente",
-    origem_lancamento: "app_campo",
-    lancado_por_perfil_id: p.perfilId,
-  } as never);
+  const resultadosHeader = await Promise.all(
+    p.linhas.map((l) =>
+      supabase.from("pulverizacoes").upsert({
+        id: l.id,
+        fazenda_id: p.fazendaId,
+        ciclo_id: p.cicloId,
+        talhao_id: l.talhaoId,
+        area_ha: l.areaHa,
+        data_inicio: p.data,
+        tipo: p.tipoAplicacao,
+        vazao_l_ha: p.vazaoLHa,
+        estadio_fenologico: p.estagioFenologico,
+        maquina_id: p.maquinaId,
+        observacao: p.observacoes,
+        status_campo: "pendente",
+        origem_lancamento: "app_campo",
+        lancado_por_perfil_id: p.perfilId,
+      } as never)
+    )
+  );
+  const erroHeader = resultadosHeader.find((r) => r.error)?.error;
   if (erroHeader) return { ok: false, erro: erroHeader.message };
 
-  const { error: erroItens } = await supabase.from("pulverizacao_itens").upsert(
-    p.produtos.map((item) => ({
-      id: crypto.randomUUID(),
-      pulverizacao_id: p.id,
-      fazenda_id: p.fazendaId,
-      insumo_id: item.insumoId,
-      nome_produto: item.nome,
-      dose_ha: item.dose,
-      unidade: item.unidade,
-      total_consumido: item.dose * p.areaHa,
-    })) as never
+  const resultadosItens = await Promise.all(
+    p.linhas.flatMap((l) =>
+      p.produtos.map((item) =>
+        supabase.from("pulverizacao_itens").upsert({
+          id: crypto.randomUUID(),
+          pulverizacao_id: l.id,
+          fazenda_id: p.fazendaId,
+          insumo_id: item.insumoId,
+          nome_produto: item.nome,
+          dose_ha: item.dose,
+          unidade: item.unidade,
+          total_consumido: item.dose * l.areaHa,
+        } as never)
+      )
+    )
   );
+  const erroItens = resultadosItens.find((r) => r.error)?.error;
   if (erroItens) return { ok: false, erro: erroItens.message };
 
-  await notificarPendente(supabase, "pulverizacoes", p.id);
+  await notificarPendente(supabase, "pulverizacoes", p.linhas[0].id);
   return { ok: true };
 }
 

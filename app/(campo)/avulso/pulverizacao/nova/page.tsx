@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCatalogoFazenda } from "@/lib/recomendacoes/use-catalogo-fazenda";
 import { inputStyle, labelStyle, sectionStyle, sectionTitleStyle } from "../../../recomendacoes/_shared/styles";
 import { MaquinaField } from "../../../recomendacoes/_shared/MaquinaField";
 import { SucessoCriacao } from "../../../recomendacoes/_shared/SucessoCriacao";
+import { TalhoesSelector } from "../../../recomendacoes/_shared/TalhoesSelector";
 import { enfileirarEExecutar } from "@/lib/offline-store";
 import { executarAvulsoPulverizacao, type PayloadAvulsoPulverizacao } from "@/lib/avulso/executores";
 
@@ -29,7 +30,7 @@ export default function AvulsoPulverizacaoPage() {
   // reais estão só nessas categorias legadas, deixando o dropdown vazio).
   } = useCatalogoFazenda(["defensivo", "herbicida", "fungicida", "inseticida", "acaricida", "adjuvante"]);
 
-  const [talhaoId, setTalhaoId] = useState("");
+  const [talhaoIdsSelecionados, setTalhaoIdsSelecionados] = useState<Set<string>>(new Set());
   const [tipoAplicacao, setTipoAplicacao] = useState(TIPOS_APLICACAO[0]);
   const [produtos, setProdutos] = useState<ProdutoItem[]>([novoProduto()]);
   const [maquinaId, setMaquinaId] = useState("");
@@ -41,7 +42,20 @@ export default function AvulsoPulverizacaoPage() {
   const [sucesso, setSucesso] = useState(false);
   const [pendenteSync, setPendenteSync] = useState(false);
 
-  const talhaoSelecionado = talhoes.find((t) => t.id === talhaoId) ?? null;
+  const hectaresSugeridos = useMemo(() => {
+    return talhoes
+      .filter((t) => talhaoIdsSelecionados.has(t.id))
+      .reduce((soma, t) => soma + t.area_ha, 0);
+  }, [talhoes, talhaoIdsSelecionados]);
+
+  function alternarTalhao(id: string) {
+    setTalhaoIdsSelecionados((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  }
 
   function atualizarProduto(chave: string, campo: keyof ProdutoItem, valor: string) {
     setProdutos((atual) => atual.map((p) => (p.chave === chave ? { ...p, [campo]: valor } : p)));
@@ -54,8 +68,12 @@ export default function AvulsoPulverizacaoPage() {
     event.preventDefault();
     setErro(null);
 
-    if (!perfilId || !fazendaId || !cicloId || !talhaoSelecionado) {
-      setErro("Selecione fazenda, ciclo e talhão.");
+    if (!perfilId || !fazendaId || !cicloId) {
+      setErro("Selecione fazenda e ciclo.");
+      return;
+    }
+    if (talhaoIdsSelecionados.size === 0) {
+      setErro("Selecione ao menos um talhão.");
       return;
     }
     const produtosValidos = produtos.filter((p) => p.insumoId && p.dose);
@@ -66,12 +84,12 @@ export default function AvulsoPulverizacaoPage() {
 
     setSalvando(true);
     const id = crypto.randomUUID();
+    const talhoesSelecionados = talhoes.filter((t) => talhaoIdsSelecionados.has(t.id));
     const payload: PayloadAvulsoPulverizacao = {
       id,
       fazendaId,
       cicloId,
-      talhaoId,
-      areaHa: talhaoSelecionado.area_ha,
+      linhas: talhoesSelecionados.map((t) => ({ id: crypto.randomUUID(), talhaoId: t.id, areaHa: t.area_ha })),
       perfilId,
       maquinaId: maquinaId || null,
       data,
@@ -135,7 +153,7 @@ export default function AvulsoPulverizacaoPage() {
           <p style={sectionTitleStyle}>Local</p>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Fazenda</span>
-            <select style={inputStyle} value={fazendaId} onChange={(e) => { setFazendaId(e.target.value); setTalhaoId(""); }}>
+            <select style={inputStyle} value={fazendaId} onChange={(e) => { setFazendaId(e.target.value); setTalhaoIdsSelecionados(new Set()); }}>
               {fazendas.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
             </select>
           </label>
@@ -147,19 +165,19 @@ export default function AvulsoPulverizacaoPage() {
             </select>
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={labelStyle}>Talhão</span>
-            <select style={inputStyle} value={talhaoId} onChange={(e) => setTalhaoId(e.target.value)}>
-              <option value="">Selecione...</option>
-              {talhoes.map((t) => <option key={t.id} value={t.id}>{t.nome} ({t.area_ha} ha)</option>)}
-            </select>
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={labelStyle}>Tipo de aplicação</span>
             <select style={inputStyle} value={tipoAplicacao} onChange={(e) => setTipoAplicacao(e.target.value)}>
               {TIPOS_APLICACAO.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </label>
         </section>
+
+        <TalhoesSelector
+          talhoes={talhoes}
+          selecionados={talhaoIdsSelecionados}
+          onAlternar={alternarTalhao}
+          hectaresSugeridos={hectaresSugeridos}
+        />
 
         <section style={sectionStyle}>
           <p style={sectionTitleStyle}>Produtos aplicados</p>
